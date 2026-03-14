@@ -10,7 +10,7 @@ import java.util.List;
 @Mapper
 public interface MessageMapper {
 
-    List<MessageCacheData> findMessage(@Param("conversationId") String conversationId,
+    List<MessageCacheData> findMessages(@Param("conversationId") String conversationId,
                                        @Param("before") LocalDateTime before,
                                        @Param("after") LocalDateTime after,
                                        @Param("limit") int limit);

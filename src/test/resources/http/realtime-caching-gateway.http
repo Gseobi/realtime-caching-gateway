@@ -1,0 +1,56 @@
+### Health Check
+GET http://localhost:8080/api/health
+
+### Message Save - TEXT
+POST http://localhost:8080/api/conversations/conv-001/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-001",
+  "senderId": "user-a",
+  "messageType": "TEXT",
+  "content": "hello redis caching gateway",
+  "metadataJson": null,
+  "sentAt": "2026-03-14T17:00:00"
+}
+
+### Message Save - IMAGE
+POST http://localhost:8080/api/conversations/conv-001/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-002",
+  "senderId": "user-b",
+  "messageType": "IMAGE",
+  "content": null,
+  "metadataJson": "{\"url\":\"https://example.com/sample-image.jpg\",\"fileName\":\"sample-image.jpg\"}",
+  "sentAt": "2026-03-14T17:01:00"
+}
+
+### Message Save - FILE
+POST http://localhost:8080/api/conversations/conv-001/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-003",
+  "senderId": "user-a",
+  "messageType": "FILE",
+  "content": null,
+  "metadataJson": "{\"url\":\"https://example.com/manual.pdf\",\"fileName\":\"manual.pdf\",\"size\":123456}",
+  "sentAt": "2026-03-14T17:02:00"
+}
+
+### Get Recent Messages
+GET http://localhost:8080/api/conversations/conv-001/messages?limit=50
+
+### Get Messages Before
+GET http://localhost:8080/api/conversations/conv-001/messages?before=2026-03-14T17:10:00&limit=20
+
+### Get Messages After
+GET http://localhost:8080/api/conversations/conv-001/messages?after=2026-03-14T16:59:00&limit=20
+
+### Get Conversation Meta
+GET http://localhost:8080/api/conversations/conv-001/meta
+
+### Get Not Found Conversation Meta
+GET http://localhost:8080/api/conversations/not-found/meta

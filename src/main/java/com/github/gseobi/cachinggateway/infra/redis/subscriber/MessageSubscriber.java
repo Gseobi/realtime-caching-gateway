@@ -8,6 +8,6 @@ import org.springframework.stereotype.Component;
 public class MessageSubscriber {
 
     public void handleMessage(String message) {
-        log.info("[redis pub/sub] received message event: {}", message);
+        log.info("[redis pub/sub] received message event={}", message);
     }
 }

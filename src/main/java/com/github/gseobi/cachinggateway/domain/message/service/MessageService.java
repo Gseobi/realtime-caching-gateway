@@ -2,18 +2,20 @@ package com.github.gseobi.cachinggateway.domain.message.service;
 
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
+import com.github.gseobi.cachinggateway.domain.message.dto.MessageResponse;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 import com.github.gseobi.cachinggateway.infra.persistence.mybatis.MessageMapper;
 import com.github.gseobi.cachinggateway.infra.redis.publisher.MessagePublisher;
 import com.github.gseobi.cachinggateway.infra.redis.repository.MessageCacheRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -48,9 +50,14 @@ public class MessageService {
         );
         this.messageCacheRepository.markDirty(messageSaveRequest.getConversationId());
         this.messagePublisher.publish(message);
+
+        log.info("Message saved to Redis and published. " +
+                 "conversationId:{}, messageId={}, senderId={}, type={}",
+                messageSaveRequest.getConversationId(), messageSaveRequest.getMessageId(),
+                messageSaveRequest.getSenderId(), messageSaveRequest.getMessageType());
     }
 
-    public List<MessageCacheData> getMessages(String conversationId, MessageQueryRequest messageQueryRequest) {
+    public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest messageQueryRequest) {
         int limit = messageQueryRequest.getLimit() == null ? 50 : messageQueryRequest.getLimit();
 
         List<String> ids = this.messageCacheRepository.findMessageIds(
@@ -61,7 +68,10 @@ public class MessageService {
         );
 
         if (ids.isEmpty()) {
-            List<MessageCacheData> fallback = this.messageMapper.findMessage(
+            log.info("Redis full miss detected. conversationId={}, before={}, after={}, limit={}",
+                    conversationId, messageQueryRequest.getBefore(), messageQueryRequest.getAfter(), limit);
+
+            List<MessageCacheData> fallback = this.messageMapper.findMessages(
                     conversationId,
                     messageQueryRequest.getBefore(),
                     messageQueryRequest.getAfter(),
@@ -70,23 +80,48 @@ public class MessageService {
 
             if (!fallback.isEmpty()) {
                 this.messageCacheRepository.refreshMessages(conversationId, fallback);
+                log.info("DB fallback result refreshed to Redis. conversationId={}, count={}",
+                        conversationId, fallback.size());
             }
-            return fallback;
+            return fallback.stream().map(this::toResponse).toList();
         }
 
         List<MessageCacheData> cached = this.messageCacheRepository.findMessagesByIds(ids);
 
         if (cached.size() != ids.size()) {
-            List<MessageCacheData> fallback = this.messageCacheRepository.findMessages(
+            log.warn("Redis partial miss detected. conversationId={}, requestedIds={}, cachedMessages={}",
+                    conversationId, ids.size(), cached.size());
+
+            List<MessageCacheData> fallback = this.messageMapper.findMessages(
                     conversationId,
                     messageQueryRequest.getBefore(),
                     messageQueryRequest.getAfter(),
                     limit
             );
-            return fallback;
+
+            if (!fallback.isEmpty()) {
+                this.messageCacheRepository.refreshMessages(conversationId, fallback);
+                log.info("DB fallback result refreshed to Redis after partial miss. conversationId={}, count={}",
+                        conversationId, fallback.size());
+            }
+
+            return fallback.stream().map(this::toResponse).toList();
         }
 
-        return cached;
+        log.info("Redis cache hit. conversationId={}, count={}", conversationId, cached.size());
+        return cached.stream().map(this::toResponse).toList();
+    }
+
+    private MessageResponse toResponse(MessageCacheData data) {
+        return MessageResponse.builder()
+                .messageId(data.getMessageId())
+                .conversationId(data.getConversationId())
+                .senderId(data.getSenderId())
+                .messageType(data.getMessageType())
+                .content(data.getContent())
+                .metadataJson(data.getMetadataJson())
+                .sentAt(data.getSentAt())
+                .build();
     }
 
     private String preview(String content, String type) {

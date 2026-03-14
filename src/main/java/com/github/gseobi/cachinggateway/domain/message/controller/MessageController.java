@@ -1,8 +1,8 @@
 package com.github.gseobi.cachinggateway.domain.message.controller;
 
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
+import com.github.gseobi.cachinggateway.domain.message.dto.MessageResponse;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
-import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 import com.github.gseobi.cachinggateway.domain.message.service.MessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,8 @@ public class MessageController {
     }
 
     @GetMapping
-    public List<MessageCacheData> getMessages(@PathVariable("conversationId") String conversationId,
-                                              @ModelAttribute MessageQueryRequest messageQueryRequest) {
+    public List<MessageResponse> getMessages(@PathVariable("conversationId") String conversationId,
+                                             @ModelAttribute MessageQueryRequest messageQueryRequest) {
         return this.messageService.getMessages(conversationId, messageQueryRequest);
     }
 }

@@ -1,37 +1,28 @@
-HELP.md
-.gradle
+# Gradle
+.gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IDE - IntelliJ
+.idea/
 *.iml
-*.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# OS
+.DS_Store
 
-### VS Code ###
-.vscode/
+# Logs
+*.log
+
+# Local env
+.env
+.env.*
+
+# Generated files
+*.class
+
+# Mac
+.AppleDouble
+.LSOverride
+
+# Docker
+docker-compose.override.yml

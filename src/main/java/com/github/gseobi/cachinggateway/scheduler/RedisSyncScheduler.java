@@ -25,11 +25,17 @@ public class RedisSyncScheduler {
     public void syncRedisToDb() {
         Set<String> conversationIds = this.messageCacheRepository.findDirtyConversationIds();
 
+        if (conversationIds.isEmpty()) {
+            log.debug("No dirty conversations found for sync.");
+            return;
+        }
+
         for (String conversationId : conversationIds) {
             try {
                 List<MessageCacheData> messages = this.messageCacheRepository.findAllCachedMessages(conversationId);
                 if (messages.isEmpty()) {
                     this.messageCacheRepository.clearDirty(conversationId);
+                    log.info("No cached messages found. dirty flag cleared. conversationId={}", conversationId);
                     continue;
                 }
 
@@ -50,8 +56,9 @@ public class RedisSyncScheduler {
                 }
 
                 this.messageCacheRepository.clearDirty(conversationId);
+                log.info("Sync completed. conversationId={}, messageCount={}", conversationId, messages.size());
             } catch (Exception ex) {
-                log.error("failed to sync conversationId : {}", conversationId, ex);
+                log.error("Failed to sync conversationId={}", conversationId, ex);
             }
         }
     }

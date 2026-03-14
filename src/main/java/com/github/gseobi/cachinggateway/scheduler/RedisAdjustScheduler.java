@@ -30,10 +30,10 @@ public class RedisAdjustScheduler {
                 ConversationMetaCacheData dbMeta = this.conversationStateMapper.findConversationMeta(conversationId);
                 if (dbMeta != null) {
                     this.messageCacheRepository.saveConversationMeta(dbMeta);
-                    log.info("adjust conversation meta form DB. conversationId : {}", conversationId);
+                    log.info("adjust conversation meta form DB. conversationId ={}", conversationId);
                 }
             } catch (Exception ex) {
-                log.error("failed to adjust conversation meta. conversationId : {}", conversationId);
+                log.error("failed to adjust conversation meta. conversationId ={}", conversationId);
             }
         }
     }

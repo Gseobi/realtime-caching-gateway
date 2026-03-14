@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/conversations/{conversationId}/meta")
+@RequestMapping("/v1/api/conversations/{conversationId}/meta")
 public class ConversationController {
 
     private final ConversationService conversationService;
