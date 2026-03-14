@@ -1,8 +1,11 @@
+@baseUrl = http://localhost:8080
+@conversationId = conv-001
+
 ### Health Check
-GET http://localhost:8080/api/health
+GET {{baseUrl}}/v1/api/health
 
 ### Message Save - TEXT
-POST http://localhost:8080/api/conversations/conv-001/messages
+POST {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages
 Content-Type: application/json
 
 {
@@ -11,11 +14,11 @@ Content-Type: application/json
   "messageType": "TEXT",
   "content": "hello redis caching gateway",
   "metadataJson": null,
-  "sentAt": "2026-03-14T17:00:00"
+  "sentAt": "2026-03-14T19:23:00"
 }
 
 ### Message Save - IMAGE
-POST http://localhost:8080/api/conversations/conv-001/messages
+POST {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages
 Content-Type: application/json
 
 {
@@ -28,7 +31,7 @@ Content-Type: application/json
 }
 
 ### Message Save - FILE
-POST http://localhost:8080/api/conversations/conv-001/messages
+POST {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages
 Content-Type: application/json
 
 {
@@ -40,17 +43,30 @@ Content-Type: application/json
   "sentAt": "2026-03-14T17:02:00"
 }
 
+### Message Save - SYSTEM
+POST {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-004",
+  "senderId": "system",
+  "messageType": "SYSTEM",
+  "content": "user-b joined the conversation",
+  "metadataJson": null,
+  "sentAt": "2026-03-14T17:03:00"
+}
+
 ### Get Recent Messages
-GET http://localhost:8080/api/conversations/conv-001/messages?limit=50
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?limit=50
 
 ### Get Messages Before
-GET http://localhost:8080/api/conversations/conv-001/messages?before=2026-03-14T17:10:00&limit=20
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?before=2026-03-14T19:26:00&limit=20
 
 ### Get Messages After
-GET http://localhost:8080/api/conversations/conv-001/messages?after=2026-03-14T16:59:00&limit=20
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?after=2026-03-14T19:26:00&limit=20
 
 ### Get Conversation Meta
-GET http://localhost:8080/api/conversations/conv-001/meta
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/meta
 
 ### Get Not Found Conversation Meta
-GET http://localhost:8080/api/conversations/not-found/meta
+GET {{baseUrl}}/v1/api/conversations/not-found/meta

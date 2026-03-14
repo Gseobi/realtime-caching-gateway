@@ -13,7 +13,6 @@ public class MessageSaveRequest {
 
     @NotBlank(message = "'messageId' is required")
     private String messageId;
-    @NotBlank(message = "'conversationId' is required")
     private String conversationId;
     @NotBlank(message = "'senderId' is required")
     private String senderId;
