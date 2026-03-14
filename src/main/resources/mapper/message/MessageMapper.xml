@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.github.gseobi.cachinggateway.infra.persistence.mybatis.MessageMapper">
+
+    <resultMap id="messageResultMap" type="com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData">
+        <result property="messageId" column="message_id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="messageType" column="message_type"/>
+        <result property="content" column="content"/>
+        <result property="metadataJson" column="metadata_json"/>
+        <result property="sentAt" column="sent_at"/>
+    </resultMap>
+
+    <select id="findMessages" resultMap="messageResultMap">
+        SELECT
+            message_id,
+            conversation_id,
+            sender_id,
+            message_type,
+            content,
+            metadata_json,
+            sent_at
+        FROM message
+        WHERE conversation_id = #{conversationId}
+        <if test="before != null">
+            AND sent_at &lt; #{before}
+        </if>
+        <if test="after != null">
+            AND sent_at &gt; #{after}
+        </if>
+        ORDER BY sent_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="upsertMessages">
+        INSERT INTO message (
+            message_id,
+            conversation_id,
+            sender_id,
+            message_type,
+            content,
+            metadata_json,
+            sent_at,
+            updated_at
+        )
+        VALUES
+        <foreach collection="messages" item="m" separator=",">
+        (
+            #{m.messageId},
+            #{m.conversationId},
+            #{m.senderId},
+            #{m.messageType},
+            #{m.content},
+            #{m.metadataJson},
+            #{m.sentAt},
+            CURRENT_TIMESTAMP
+        )
+        </foreach>
+        ON CONFLICT (message_id)
+        DO UPDATE SET
+        content = EXCLUDED.content,
+        metadata_json = EXCLUDED.metadata_json,
+        updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="upsertConversationState">
+        INSERT INTO conversation_state (
+            conversation_id,
+            last_message_id,
+            last_message_preview,
+            last_sender_id,
+            last_sent_at,
+            updated_at
+        )
+        VALUES (
+            #{conversationId},
+            #{lastMessageId},
+            #{lastMessagePreview},
+            #{lastSenderId},
+            #{lastSentAt},
+            CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (conversation_id)
+        DO UPDATE SET
+        last_message_id = EXCLUDED.last_message_id,
+        last_message_preview = EXCLUDED.last_message_preview,
+        last_sender_id = EXCLUDED.last_sender_id,
+        last_sent_at = EXCLUDED.last_sent_at,
+        updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+</mapper>
+

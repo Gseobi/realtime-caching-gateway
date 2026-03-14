@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.github.gseobi.cachinggateway.infra.persistence.mybatis.ConversationStateMapper">
+
+    <resultMap id="conversationMetaResultMap"
+               type="com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData">
+        <result property="conversationId" column="conversation_id"/>
+        <result property="lastMessageId" column="last_message_id"/>
+        <result property="lastMessagePreview" column="last_message_preview"/>
+        <result property="lastSenderId" column="last_sender_id"/>
+        <result property="lastSentAt" column="last_sent_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findConversationMeta" resultMap="conversationMetaResultMap">
+        SELECT conversation_id,
+               last_message_id,
+               last_message_preview,
+               last_sender_id,
+               last_sent_at,
+               updated_at
+        FROM conversation_state
+        WHERE conversation_id = #{conversationId}
+    </select>
+
+</mapper>
+

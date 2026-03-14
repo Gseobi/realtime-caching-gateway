@@ -1,3 +1,28 @@
 spring:
   application:
     name: realtime-caching-gateway
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/realtime_caching_gateway
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+mybatis:
+  mapper-location: classpath:/mapper/**/*.xml
+  type-aliase-package: com.github.gsoebi.cachinggateway.domain
+
+
+gateway:
+  redis:
+    message-ttl-seconds: 600
+    conversation-meta-ttl-seconds: 180
+  sync:
+    initial-delay-ms: 10000     # 10sec sync cycle initial delay set
+    fixed-delay-ms: 180000      # 3min sync cycle set
+    adjust-cron: "0 0 4 * * *"  # 4am adjust cycle set

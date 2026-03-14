@@ -1,0 +1,41 @@
+### 메시지 저장
+POST http://localhost:8080/api/conversations/conv-001/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-001",
+  "senderId": "user-a",
+  "messageType": "TEXT",
+  "content": "hello redis caching gateway",
+  "metadataJson": null,
+  "sentAt": "2026-03-14T17:00:00"
+}
+
+### 메시지 저장 - 이미지
+POST http://localhost:8080/api/conversations/conv-001/messages
+Content-Type: application/json
+
+{
+  "messageId": "msg-002",
+  "senderId": "user-b",
+  "messageType": "IMAGE",
+  "content": null,
+  "metadataJson": "{\"url\":\"https://example.com/a.jpg\",\"fileName\":\"a.jpg\"}",
+  "sentAt": "2026-03-14T17:01:00"
+}
+
+### 최근 메시지 조회
+GET http://localhost:8080/api/conversations/conv-001/messages?limit=50
+
+### before 기반 조회
+GET http://localhost:8080/api/conversations/conv-001/messages?before=2026-03-14T17:10:00&limit=20
+
+### after 기반 조회
+GET http://localhost:8080/api/conversations/conv-001/messages?after=2026-03-14T16:50:00&limit=20
+
+### conversation meta 조회
+GET http://localhost:8080/api/conversations/conv-001/meta
+
+### 없는 conversation meta 조회
+GET http://localhost:8080/api/conversations/not-found/meta
+
