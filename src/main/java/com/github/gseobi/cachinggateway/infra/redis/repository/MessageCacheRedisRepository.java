@@ -45,6 +45,7 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
         this.redisTemplate.opsForHash().putAll(messageKey, hashData);
         this.redisTemplate.expire(messageKey, Duration.ofSeconds(messageTtlSeconds));
         this.redisTemplate.opsForZSet().add(indexKey, data.getMessageId(), score);
+        this.redisTemplate.expire(indexKey, Duration.ofSeconds(messageTtlSeconds));
     }
 
     @Override
@@ -67,10 +68,16 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     public List<String> findMessageIds(String conversationId, LocalDateTime before, LocalDateTime after, int limit) {
         String indexKey = RedisKeyPolicy.conversationMessageIndex(conversationId);
 
-        double minimum = after == null ? Double.NEGATIVE_INFINITY : toEpochMillis(after);
-        double maximum = before == null ? Double.NEGATIVE_INFINITY : toEpochMillis(before);
+        Set<String> ids;
+        if (before == null && after == null) {
+            ids = this.redisTemplate.opsForZSet().reverseRange(indexKey, 0, limit - 1);
+        } else {
+            double minimum = after == null ? Double.NEGATIVE_INFINITY : toEpochMillis(after);
+            double maximum = before == null ? Double.POSITIVE_INFINITY : toEpochMillis(before);
 
-        Set<String> ids = redisTemplate.opsForZSet().reverseRangeByScore(indexKey, minimum, maximum, 0, limit);
+            ids = this.redisTemplate.opsForZSet()
+                    .reverseRangeByScore(indexKey, minimum, maximum, 0, limit);
+        }
 
         if (ids == null || ids.isEmpty()) {
             return Collections.emptyList();
@@ -87,7 +94,7 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
 
         List<MessageCacheData> result = new ArrayList<>();
         for (String id : messageIds) {
-            Map<Object, Object> raw = redisTemplate.opsForHash().entries(RedisKeyPolicy.message(id));
+            Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.message(id));
             if (raw == null || raw.isEmpty()) continue;
             result.add(toMessage(raw));
         }
@@ -109,18 +116,18 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
 
     @Override
     public void markDirty(String conversationId) {
-        redisTemplate.opsForSet().add(RedisKeyPolicy.dirtyConversations(), conversationId);
+        this.redisTemplate.opsForSet().add(RedisKeyPolicy.dirtyConversations(), conversationId);
     }
 
     @Override
     public Set<String> findDirtyConversationIds() {
-        Set<String> ids = redisTemplate.opsForSet().members(RedisKeyPolicy.dirtyConversations());
+        Set<String> ids = this.redisTemplate.opsForSet().members(RedisKeyPolicy.dirtyConversations());
         return ids == null ? Collections.emptySet() : ids;
     }
 
     @Override
     public void clearDirty(String conversationId) {
-        redisTemplate.opsForSet().remove(RedisKeyPolicy.dirtyConversations(), conversationId);
+        this.redisTemplate.opsForSet().remove(RedisKeyPolicy.dirtyConversations(), conversationId);
     }
 
     @Override
@@ -131,7 +138,7 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
 
     @Override
     public ConversationMetaCacheData findConversationMeta(String conversationId) {
-        Map<Object, Object> raw = redisTemplate.opsForHash().entries(RedisKeyPolicy.conversationMeta(conversationId));
+        Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.conversationMeta(conversationId));
         if (raw == null || raw.isEmpty()) return null;
 
         return ConversationMetaCacheData.builder()

@@ -58,7 +58,7 @@ public class MessageService {
     }
 
     public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest messageQueryRequest) {
-        int limit = messageQueryRequest.getLimit() == null ? 50 : messageQueryRequest.getLimit();
+        Integer limit = messageQueryRequest.getLimit() == null ? 50 : messageQueryRequest.getLimit();
 
         List<String> ids = this.messageCacheRepository.findMessageIds(
                 conversationId,

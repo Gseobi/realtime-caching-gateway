@@ -13,7 +13,7 @@ public interface MessageMapper {
     List<MessageCacheData> findMessages(@Param("conversationId") String conversationId,
                                        @Param("before") LocalDateTime before,
                                        @Param("after") LocalDateTime after,
-                                       @Param("limit") int limit);
+                                       @Param("limit") Integer limit);
 
     void upsertMessages(@Param("messages") List<MessageCacheData> messages);
 

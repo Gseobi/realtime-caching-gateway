@@ -14,14 +14,14 @@ spring:
       port: 6379
 
 mybatis:
-  mapper-location: classpath:/mapper/**/*.xml
-  type-aliase-package: com.github.gsoebi.cachinggateway.domain
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.github.gsoebi.cachinggateway.domain
 
 
 gateway:
   redis:
     message-ttl-seconds: 600
-    conversation-meta-ttl-seconds: 180
+    conversation-meta-ttl-seconds: 360
   sync:
     initial-delay-ms: 10000     # 10sec sync cycle initial delay set
     fixed-delay-ms: 180000      # 3min sync cycle set

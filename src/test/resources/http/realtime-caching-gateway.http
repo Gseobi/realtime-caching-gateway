@@ -14,7 +14,7 @@ Content-Type: application/json
   "messageType": "TEXT",
   "content": "hello redis caching gateway",
   "metadataJson": null,
-  "sentAt": "2026-03-14T19:23:00"
+  "sentAt": "2026-03-15T11:40:00"
 }
 
 ### Message Save - IMAGE
@@ -27,7 +27,7 @@ Content-Type: application/json
   "messageType": "IMAGE",
   "content": null,
   "metadataJson": "{\"url\":\"https://example.com/sample-image.jpg\",\"fileName\":\"sample-image.jpg\"}",
-  "sentAt": "2026-03-14T17:01:00"
+  "sentAt": "2026-03-15T11:41:00"
 }
 
 ### Message Save - FILE
@@ -40,7 +40,7 @@ Content-Type: application/json
   "messageType": "FILE",
   "content": null,
   "metadataJson": "{\"url\":\"https://example.com/manual.pdf\",\"fileName\":\"manual.pdf\",\"size\":123456}",
-  "sentAt": "2026-03-14T17:02:00"
+  "sentAt": "2026-03-15T11:42:00"
 }
 
 ### Message Save - SYSTEM
@@ -53,17 +53,17 @@ Content-Type: application/json
   "messageType": "SYSTEM",
   "content": "user-b joined the conversation",
   "metadataJson": null,
-  "sentAt": "2026-03-14T17:03:00"
+  "sentAt": "2026-03-15T11:43:00"
 }
 
 ### Get Recent Messages
 GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?limit=50
 
 ### Get Messages Before
-GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?before=2026-03-14T19:26:00&limit=20
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?before=2026-03-15T11:42:00&limit=20
 
 ### Get Messages After
-GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?after=2026-03-14T19:26:00&limit=20
+GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/messages?after=2026-03-15T11:40:00&limit=20
 
 ### Get Conversation Meta
 GET {{baseUrl}}/v1/api/conversations/{{conversationId}}/meta

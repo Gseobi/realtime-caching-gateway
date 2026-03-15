@@ -19,8 +19,8 @@ spring:
       schema-locations: classpath:db/migration/init_schema_v1.sql
 
 mybatis:
-  mapper-location: classpath:/mapper/**/*.xml
-  type-aliase-package: com.github.gsoebi.cachinggateway.domain
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.github.gsoebi.cachinggateway.domain
 
 
 gateway:
@@ -30,4 +30,5 @@ gateway:
   sync:
     initial-delay-ms: 10000     # 10sec sync cycle initial delay set
     fixed-delay-ms: 180000      # 3min sync cycle set
+#    fixed-delay-ms: 30000      # local 테스트 용 임시 30초
     adjust-cron: "0 0 4 * * *"  # 4am adjust cycle set
