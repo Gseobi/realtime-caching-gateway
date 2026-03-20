@@ -84,7 +84,7 @@ message caching / fallback / partial miss handling / scheduled synchronization �
 
 ## 6. Architecture
 
-![Architecture](docs/Realtime%20Caching%20Gateway%20Architecture.drawio.png)
+![Architecture](docs/architecture.png)
 
 ### High-Level Flow
 
@@ -232,6 +232,8 @@ Redis는 빠른 읽기/쓰기와 실시간 처리에 강점이 있고, PostgreSQ
 ---
 
 ## 14. Documents
-- Test Result Report: `docs/test-report.md`
+- [Test Report](docs/test-report.md)
+- [Design Notes](docs/design-notes.md)
+- [Troubleshooting Notes](docs/troubleshooting.md)
+- [Architecture Diagram](docs/architecture.png)
 - Test Log Images: `docs/image/**`
-- Architecture Diagram: `docs/Realtime Caching Gateway Architecture.drawio.png`
