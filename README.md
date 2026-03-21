@@ -265,8 +265,8 @@ conversation별 messageId 목록을 시간 순으로 관리하는 Redis Sorted S
 PostgreSQL fallback 및 주기적 동기화를 통해
 복구 가능성과 최종 정합성을 함께 고려한 구조로 동작함을 확인했습니다.
 
-- 상세 테스트 결과는 `docs/test-report.md` 문서를 참고할 수 있습니다.
-- 자동화 테스트 실행 결과 예시는 `docs/image/test-report-summary.png`에서 확인할 수 있습니다.
+상세 테스트 결과는 `docs/test-report.md` 문서를 참고할 수 있습니다.
+자동화 테스트 실행 결과 예시는 `docs/image/test-report-summary.png`에서 확인할 수 있습니다.
 
 <br/>
 

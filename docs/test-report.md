@@ -276,3 +276,6 @@ PostgreSQL fallback과 주기적 synchronization을 통해
 ## 7. Automated Test Report Snapshot
 
 ![Test Report Summary](image/test-report-summary.png)
+![Test Health Api](image/test-health-api.png)
+![Test Message Api](image/test-message-api.png)
+![Test Message Recovery](image/test-message-recovery.png)
