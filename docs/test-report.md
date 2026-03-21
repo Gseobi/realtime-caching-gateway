@@ -142,6 +142,28 @@ Redis를 **real-time message processing layer + cache layer**로 활용하고, P
 
 <br/>
 
+### 3.6 Recovery / Fallback Integration
+**Test Class**
+- `MessageRecoveryIntegrationTest`
+
+**Scenarios**
+- Redis full miss fallback
+- Redis partial miss recovery
+- conversation meta recovery
+
+**Purpose**
+- Redis miss / partial miss / meta miss 상황에서 PostgreSQL fallback 및 Redis refresh / rebuild 흐름이 정상 동작하는지 검증
+
+**Expected**
+- full miss 발생 시 PostgreSQL fallback 후 메시지 조회 가능
+- partial miss 발생 시 누락 message hash 복구
+- meta miss 발생 시 `conversation_state` 기반 meta 재구성
+
+**Result**
+- Pass
+
+<br/>
+
 ## 4. Manual / Integration Verification Scenarios
 
 ### 4.1 Message Save to Redis
@@ -252,6 +274,7 @@ dirty conversation 기반 scheduler 동작 시 Redis 상태가 PostgreSQL에 반
 - 메시지 저장 API 정상 동작
 - recent / before / after 조회 API 정상 동작
 - conversation meta 조회 API 정상 동작
+- full miss fallback / partial miss recovery / meta recovery 자동화 테스트
 
 ### Manual / Integration Verification
 - Redis 기반 메시지 저장 및 조회
