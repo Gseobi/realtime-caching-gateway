@@ -1,4 +1,5 @@
 # realtime-caching-gateway
+[![CI](https://github.com/Gseobi/realtime-caching-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Gseobi/realtime-caching-gateway/actions/workflows/ci.yml)
 
 Redis를 단순 Pub/Sub 브로커가 아닌 **real-time message processing layer + cache layer**로 활용하고,  
 PostgreSQL을 **fallback and final persistence layer**로 두어  
