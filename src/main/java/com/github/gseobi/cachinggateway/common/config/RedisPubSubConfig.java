@@ -3,6 +3,7 @@ package com.github.gseobi.cachinggateway.common.config;
 import com.github.gseobi.cachinggateway.infra.redis.key.RedisKeyPolicy;
 import com.github.gseobi.cachinggateway.infra.redis.subscriber.MessageSubscriber;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -12,6 +13,11 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(
+        name = "app.redis.pubsub.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class RedisPubSubConfig {
 
     private final RedisConnectionFactory redisConnectionFactory;

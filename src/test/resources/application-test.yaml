@@ -1,0 +1,4 @@
+app:
+  redis:
+    pubsub:
+      enabled: false
