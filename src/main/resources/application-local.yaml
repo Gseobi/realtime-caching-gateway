@@ -20,7 +20,7 @@ spring:
 
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml
-  type-aliases-package: com.github.gsoebi.cachinggateway.domain
+  type-aliases-package: com.github.gseobi.cachinggateway.domain
 
 
 gateway:
