@@ -27,7 +27,7 @@ jobs:
           --health-cmd="pg_isready -U postgres -d realtime_caching_gateway"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - name: Checkout
@@ -41,6 +41,26 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres -d realtime_caching_gateway && break
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      - name: Apply schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -p 5432 -U postgres -d realtime_caching_gateway \
+            -f src/main/resources/db/migration/init_schema_v1.sql
 
       - name: Run tests
         run: ./gradlew clean test
