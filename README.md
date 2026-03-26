@@ -1,322 +1,218 @@
 # realtime-caching-gateway
+
 [![CI](https://github.com/Gseobi/realtime-caching-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Gseobi/realtime-caching-gateway/actions/workflows/ci.yml)
 
-Redis를 단순 Pub/Sub 브로커가 아닌 **real-time message processing layer + cache layer**로 활용하고,  
-PostgreSQL을 **fallback and final persistence layer**로 두어  
-메시지 데이터의 성능, 복구 가능성, 정합성을 함께 고려한 Realtime Caching Gateway portfolio project입니다.
+Redis를 단순 Pub/Sub 보조 계층이 아니라 **실시간 메시지 처리 및 캐시 계층**으로 활용하고, 
+PostgreSQL을 **복구 및 최종 영속 계층**으로 분리해 성능, 복구 가능성, 정합성을 함께 고려한 Backend 프로젝트입니다.
 
-<br/>
+</br>
 
-## 1. Project Overview
+## 1. Overview
 
-해당 프로젝트는 실제 업무 중 경험했던 **1:1 상담톡 서비스 리팩토링 설계 경험**을 바탕으로 제작한 포트폴리오 프로젝트입니다.
+이 프로젝트는 실시간 메시지성 서비스에서 최근 메시지 조회 성능을 높이면서도, 캐시 유실이나 부분 유실이 발생했을 때 복구 가능한 구조를 설계하는 데 초점을 둔 **Realtime Caching Gateway** 프로젝트입니다.
 
-당시 기존 서비스는 **NestJS, Redis, Docker** 기반으로 운영 중이었고,  
-Redis는 주로 **Pub/Sub 기반 이벤트 전달 용도**로만 사용되었으며,  
-실시간 메시지와 상태 데이터 처리는 **DB 중심**으로 관리되고 있었습니다.
+단순히 메시지를 저장하고 조회하는 기능 구현보다, 아래와 같은 운영 관점의 문제를 구조로 해결하는 것을 목표로 했습니다.
 
-프로젝트를 파악하는 과정에서 기존 아키텍처 자료가 유실되어 프로젝트 파일만 남아 있었고,  
-기존 구조와 데이터 흐름을 먼저 분석해야 했습니다.  
-이 과정에서 Redis를 단순 이벤트 전달 계층이 아니라 **message caching and state management layer**로 확장하고,  
-DB 부담을 줄이면서도 복구 가능성과 최종 정합성을 유지하는 방향으로 구조를 설계했습니다.
+- 최근 메시지를 빠르게 조회할 수 있는가
+- 캐시가 깨졌을 때도 다시 복구해 응답할 수 있는가
+- 실시간 처리 성능과 최종 정합성을 함께 가져갈 수 있는가
+- 메시지 이력과 대화 상태를 어떤 기준으로 분리할 것인가
 
-실무에서는 해당 구조에 대한 설계 및 자료 제작까지 완료했지만,  
-우선순위 변경으로 실제 개발은 진행되지 못했습니다.
+</br>
 
-본 프로젝트는 당시 설계 경험을 바탕으로  
-message caching / fallback / partial miss handling / scheduled synchronization 구조를  
-**Java, Spring Boot, MyBatis, Redis, PostgreSQL** 환경으로 재구성하여 구현한 포트폴리오 프로젝트입니다.
+## 2. Problem This Project Solves
 
-<br/>
+실시간 메시지 서비스에서는 조회 성능과 최종 데이터 정합성을 동시에 만족시키는 것이 쉽지 않습니다.
 
-## 2. Why This Project
+모든 조회를 DB 기준으로 처리하면 최근 대화 조회 비용이 커지고, 반대로 캐시만 신뢰하면 아래와 같은 운영 문제가 생길 수 있습니다.
 
-이 프로젝트는 단순한 예제 구현이 아니라,  
-실제 운영 중인 메시지성 서비스에서 **캐시 활용 범위**, **복구 가능성**, **최종 정합성**을 함께 고려했던  
-리팩토링 설계 경험을 포트폴리오 형태로 정리한 프로젝트입니다.
+- Redis full miss 발생 시 메시지 조회 불가
+- index는 남아 있지만 일부 메시지 데이터가 없는 partial miss
+- conversation meta 유실로 인한 최신 상태 복구 실패
+- Redis와 DB 반영 시점 차이로 인한 정합성 불일치
+- 장애 이후 어떤 계층을 기준으로 복구할지 불명확한 구조
 
-핵심적으로 아래 문제를 해결하는 구조를 목표로 했습니다.
+이 프로젝트는 이러한 문제를 다음과 같이 풀어냅니다.
 
-- Redis를 Pub/Sub broker를 넘어 **message cache and state layer**로 활용
-- 최근 메시지와 conversation meta를 Redis에서 우선 조회
-- Redis full miss / partial miss 발생 시 PostgreSQL fallback 및 refresh
-- dirty conversation 기반 scheduled synchronization
-- 캐시 유실 상황에서도 복구 가능한 구조 설계
+- **Redis**: 빠른 읽기/쓰기와 최근 메시지 조회 담당
+- **PostgreSQL**: fallback 및 최종 영속 계층 담당
+- **Scheduler**: dirty conversation 기준 주기적 동기화 담당
 
-<br/>
+즉, 이 프로젝트는 단순 캐시 예제가 아니라 **조회 성능, 복구 흐름, 최종 정합성**을 함께 설계한 운영형 메시지 Backend 구조를 설명하기 위한 프로젝트입니다.
 
-## 3. What This Project Proves
+</br>
 
-- Redis를 단순 Pub/Sub 보조 계층이 아니라 **message cache / state layer**로 활용할 수 있습니다.
-- Redis full miss / partial miss 상황에서도 PostgreSQL fallback 및 refresh를 통해 복구 가능한 구조를 설계할 수 있습니다.
-- conversation meta miss 상황에서도 `conversation_state` 기반 복구 흐름을 구성할 수 있습니다.
-- Redis와 PostgreSQL의 역할을 분리하여 성능과 최종 정합성을 함께 고려할 수 있습니다.
-- dirty conversation 기반 scheduled synchronization으로 최종 반영 구조를 설계할 수 있습니다
+## 3. Key Design Points
 
-<br/>
+### 1) 메시지 이력과 대화 상태를 분리한 캐시 구조
 
-## 4. Key Design Points
+메시지 이력과 대화방 최신 상태는 조회 목적과 관리 기준이 다르기 때문에 분리했습니다.
 
-- Redis Hash와 Sorted Set을 활용한 메시지 저장 및 조회 구조
-- conversation meta와 message history를 분리한 캐시 설계
-- full miss / partial miss 상황을 고려한 fallback and refresh 처리
-- dirty conversation 기반 Redis -> PostgreSQL scheduled synchronization
-- Redis와 PostgreSQL의 역할 분리를 통한 성능과 복구 가능성 균형
+- `message`: recent / before / after 조회 중심
+- `conversation meta`: 마지막 메시지와 최신 상태 복구 중심
+- 구조별로 다른 캐시 정책과 복구 정책 적용 가능
 
-<br/>
+이렇게 분리하면 메시지 조회 최적화와 상태 복구 책임을 명확하게 나눌 수 있습니다.
 
-## 5. Verified Scenarios
+### 2) cache hit만이 아니라 recovery flow까지 포함한 조회 설계
 
-- Redis 기반 메시지 저장
-- Redis recent / before / after 조회
-- Redis full miss 발생 시 PostgreSQL fallback 및 Redis refresh
-- Redis partial miss 발생 시 복구 처리
-- conversation meta miss 발생 시 `conversation_state` 기반 복구
-- dirty conversation 기반 Redis -> PostgreSQL synchronization
-- Redis / PostgreSQL 연결 상태 확인용 Health API 동작
+이 프로젝트의 핵심은 캐시 적중 자체보다, **캐시가 깨졌을 때도 다시 응답 가능한 구조**입니다.
 
-<br/>
+- full miss 시 PostgreSQL fallback
+- partial miss 시 누락 메시지 복구
+- meta miss 시 `conversation_state` 기반 재구성
+- 조회 실패를 즉시 서비스 실패로 연결하지 않고 복구 경로로 처리
 
-## 6. Verification Summary
+즉, 운영 중 발생할 수 있는 캐시 불완전 상태를 전제로 설계했습니다.
 
-| Scenario | Expected Behavior | Result | Evidence |
-|---|---|---|---|
-| Redis insert | 메시지가 Redis 구조에 정상 저장됨 | Pass | `docs/test-report.md` |
-| Recent / before / after query | recent / before / after 조회가 정상 동작함 | Pass | `docs/test-report.md` |
-| Full cache miss | PostgreSQL fallback 후 Redis refresh 수행 | Pass | `docs/test-report.md` |
-| Partial cache miss | 누락 메시지 복구 후 재조회 가능 | Pass | `docs/test-report.md` |
-| Conversation meta miss | `conversation_state` 기반 복구 수행 | Pass | `docs/test-report.md` |
-| Dirty sync | dirty conversation 기반 PostgreSQL synchronization 수행 | Pass | `docs/test-report.md` |
-| Health API | Redis / PostgreSQL 상태 확인 가능 | Pass | `docs/test-report.md` |
+### 3) dirty conversation 기반 최종 동기화
 
-<br/>
+Redis를 1차 처리 계층으로 활용하되, 최종 영속 반영은 별도 주기 작업으로 분리했습니다.
 
-## 7. Tech Stack
+- 메시지 저장 시 dirty conversation 등록
+- Scheduler가 주기적으로 PostgreSQL 반영 수행
+- 실시간 처리 성능과 최종 정합성의 균형 확보
 
-- **Java 21**
-- **Spring Boot 3.5.11**
-- **MyBatis**
-- **Redis**
-- **PostgreSQL**
-- **Gradle**
-- **Docker / Docker Compose**
+이 구조를 통해 write 시점의 응답 속도를 유지하면서도, 장기적으로는 DB를 기준으로 정합성을 맞출 수 있도록 했습니다.
 
-> 실무 설계 경험에서는 MySQL 기반 서비스를 전제로 구조를 고민했지만,  
-> 본 포트폴리오 프로젝트에서는 upsert 및 테스트 편의성을 고려하여 PostgreSQL을 선택했습니다.  
-> Docker는 로컬 테스트 환경 구성을 위해 프로젝트 제작과 함께 학습하며 적용했습니다.
+</br>
 
-<br/>
-
-## 8. Quick Links
-
-- [Test Report](docs/test-report.md)
-- [Design Notes](docs/design-notes.md)
-- [Troubleshooting Notes](docs/troubleshooting.md)
-- [Architecture Diagram](docs/architecture.png)
-- Test Log Images: `docs/image/**`
-
-<br/>
-
-## 9. Architecture
+## 4. Architecture / Flow
 
 ![Architecture](docs/architecture.png)
 
-### High-Level Flow
+### Flow Summary
 
 1. Client가 메시지 저장 요청을 보냅니다.
 2. Application은 메시지를 Redis Hash와 Sorted Set에 저장합니다.
-3. Conversation meta를 Redis에 갱신하고 dirty conversation을 등록합니다.
+3. conversation meta를 갱신하고 dirty conversation을 등록합니다.
 4. 조회 요청 시 Redis에서 recent / before / after 메시지를 우선 조회합니다.
-5. Redis full miss 또는 partial miss 발생 시 PostgreSQL fallback을 수행합니다.
-6. fallback 결과를 Redis에 refresh 합니다.
-7. Scheduler가 dirty conversation을 주기적으로 조회하여 PostgreSQL에 upsert 합니다.
+5. Redis full miss 또는 partial miss가 발생하면 PostgreSQL fallback을 수행합니다.
+6. fallback 결과를 Redis에 refresh 또는 rebuild 합니다.
+7. Scheduler가 dirty conversation을 주기적으로 조회해 PostgreSQL에 반영합니다.
+
+### High-Level Flow
 
 ```mermaid
 flowchart TD
-    A[Client Request] --> B[Message API]
-    B --> C[Redis Message Cache / Conversation State]
-    C -->|Cache Hit| D[Return Response]
-    C -->|Cache Miss| E[PostgreSQL Fallback]
-    E --> F[Redis Refresh]
-    F --> D
-    G[Sync Scheduler] --> C
-    G[Sync Scheduler] --> E
+    A[Client] --> B[Message API]
+    B --> C[Redis Hash / Sorted Set / Meta]
+    C --> D[Dirty Conversation Set]
+
+    A --> E[Query API]
+    E --> F{Redis Hit?}
+    F -- Yes --> G[Return from Redis]
+    F -- Full Miss / Partial Miss --> H[PostgreSQL Fallback]
+    H --> I[Redis Refresh / Meta Rebuild]
+    I --> J[Return Response]
+
+    D --> K[Sync Scheduler]
+    K --> L[PostgreSQL Upsert]
 ```
 
-<br/>
+### Main APIs
 
-## 10. Recovery Flow
-
-Redis 조회는 항상 hit만 전제하지 않고,
-full miss / partial miss / meta miss 상황까지 고려하여 복구 가능하도록 설계했습니다.
-
-```mermaid
-flowchart TD
-    A[Read Request] --> B[Query Redis]
-    B --> C{Cache Status}
-    C -->|Full Hit| D[Return Redis Result]
-    C -->|Full Miss| E[Fallback to PostgreSQL]
-    C -->|Partial Miss| F[Recover Missing Messages]
-    E --> G[Refresh Redis]
-    F --> G
-    G --> H[Return Recovered Result]
-```
-<br/>
-
-## 11. Redis Data Structures
-
-### `msg:{messageId}`
-개별 메시지 데이터를 저장하는 Redis Hash입니다.
-
-예시 필드:
-- `messageId`
-- `conversationId`
-- `senderId`
-- `messageType`
-- `content`
-- `metadataJson`
-- `sentAt`
-
-### `conv:{conversationId}:message_index`
-conversation별 messageId 목록을 시간 순으로 관리하는 Redis Sorted Set입니다.
-
-- score: `sentAt` 기반 epoch millis
-- member: `messageId`
-
-이를 통해 recent / before / after 조회를 효율적으로 처리합니다.
-
-### `conv:{conversationId}:meta`
-대화 meta 정보를 저장하는 Redis Hash입니다.
-
-예시 필드:
-- `conversationId`
-- `lastMessageId`
-- `lastMessagePreview`
-- `lastSenderId`
-- `lastSentAt`
-- `updatedAt`
-
-### `sync:dirty:conversations`
-주기적 DB 반영이 필요한 conversation을 관리하는 Redis Set입니다.
-
-<br/>
-
-## 12. Database Schema
-
-### `message`
-전체 메시지 이력을 저장하는 테이블입니다.
-
-### `conversation_state`
-대화방의 마지막 메시지 / 발신자 / 시각 등 meta state를 저장하는 테이블입니다.
-
-### `conversation`
-대화방 기본 정보를 저장하는 테이블입니다.
-
-### `conversation_participant`
-참여자 정보를 저장하는 테이블입니다.
-
-<br/>
-
-## 13. API
-
-### Health Check
 - `GET /v1/api/health`
-
-### Save Message
 - `POST /v1/api/conversations/{conversationId}/messages`
-
-### Query Messages
-- `GET /v1/api/conversations/{conversationId}/messages?limit=50`
-- `GET /v1/api/conversations/{conversationId}/messages?before=...&limit=20`
-- `GET /v1/api/conversations/{conversationId}/messages?after=...&limit=20`
-
-### Conversation Meta
+- `GET /v1/api/conversations/{conversationId}/messages`
 - `GET /v1/api/conversations/{conversationId}/meta`
- 
-<br/>
 
-## 14. Run Locally
+</br>
 
-### Start Redis / PostgreSQL
-```bash
-> docker compose up -d
-```
-### Apply Schema
-```bash
-> docker exec -i realtime-caching-gateway-postgres \
-  psql -U postgres -d realtime_caching_gateway \
-  < src/main/resources/db/migration/init_schema_v1.sql
-```
-### Run Application
-- `RealtimeCachingGatewayApplication` 실행
-- Active Profile: `local`
+## 5. Why These Technologies
 
-<br/>
+### Java 21 + Spring Boot
 
-## 15. Test and Verification
-본 프로젝트에서 검증한 주요 시나리오는 다음과 같습니다.
-- Redis insert 정상 동작
-- Redis recent / before / after query 정상 동작
-- Redis full miss 발생 시 PostgreSQL fallback 및 Redis refresh
-- Redis partial miss 발생 시 복구 처리
-- conversation meta miss 발생 시 `conversation_state` 기반 복구
-- dirty conversation 기반 Redis -> PostgreSQL sync
+API, Validation, Scheduler, 테스트 구조를 일관되게 구성하기 적합하다고 판단했습니다.  
+계층별 책임 분리와 운영형 흐름을 설명하기에도 적절한 기본 골격을 제공합니다.
 
-검증 결과, Redis를 단순 캐시가 아니라 real-time message processing layer로 활용하면서도
-PostgreSQL fallback 및 주기적 동기화를 통해
-복구 가능성과 최종 정합성을 함께 고려한 구조로 동작함을 확인했습니다.
+### Redis
 
-상세 테스트 결과는 `docs/test-report.md` 문서를 참고할 수 있습니다.
-자동화 테스트 실행 결과 예시는 `docs/image/test-report-summary.png`에서 확인할 수 있습니다.
+최근 메시지 조회와 상태 캐시에 유리합니다.  
+Hash / Sorted Set / Set 조합으로 메시지 데이터, index, dirty tracking을 구분해 관리할 수 있어 **실시간 처리 계층**으로 활용하기에 적합했습니다.
 
-<br/>
+### PostgreSQL
 
-## 12. Design Notes
+최종 영속성과 fallback 기준 저장소 역할을 담당합니다.  
+full miss, partial miss, meta 복구 시 기준 계층이 되며, 로컬 테스트와 upsert 검증에도 적합했습니다.
 
-### Why Redis and PostgreSQL
-Redis는 빠른 읽기/쓰기와 실시간 처리에 강점이 있고, PostgreSQL은 영속성과 복구 가능성에 강점이 있습니다.
-본 프로젝트는 Redis를 1차 처리 계층으로 두고, PostgreSQL을 fallback 및 최종 반영 계층으로 두어
-성능과 복구 가능성을 함께 고려한 구조를 목표로 했습니다.
+### MyBatis
 
-### Why Message and Conversation Separation
-메시지 이력 관리와 대화방 상태 관리는 조회 목적과 캐시 정책이 다르기 때문에 분리했습니다.
-- `message`: 메시지 단위 데이터와 이력 조회
-- `conversation`: 마지막 메시지, 대화 meta, 상태 복구
-이를 통해 캐시 정책과 책임을 더 명확하게 나눌 수 있도록 했습니다.
+메시지 조회, fallback, 동기화 흐름을 SQL 중심으로 명확하게 드러내기 위해 선택했습니다.  
+복구 흐름을 설명할 때도 조회/저장 의도를 비교적 분명하게 표현할 수 있습니다.
 
-상세한 설계 배경은 아래 문서를 참고할 수 있습니다.
-`docs/design-notes.md`
+### Docker / Docker Compose
 
-<br/>
+Redis와 PostgreSQL을 함께 검증하는 로컬 환경을 반복적으로 구성하기 위해 사용했습니다.  
+복구 시나리오와 동기화 흐름을 재현하기에 유용했습니다.
 
-## 17. Future Improvements
+### Tech Stack
+
+- Java 21
+- Spring Boot 3.5.11
+- Spring Web / Validation / JDBC
+- MyBatis
+- Redis
+- PostgreSQL
+- Gradle
+- Docker / Docker Compose
+
+</br>
+
+## 6. Test / CI / Exception Handling
+
+### Test Focus
+
+이 프로젝트는 단순 happy path 확인보다 **운영 중 실제로 문제가 될 수 있는 복구 흐름** 검증에 더 집중했습니다.
+
+- Health API 동작 확인
+- 메시지 저장 API 동작 확인
+- recent / before / after 조회 검증
+- conversation meta 조회 검증
+- Redis full miss fallback 검증
+- Redis partial miss recovery 검증
+- conversation meta rebuild 검증
+- dirty conversation 기반 Redis → PostgreSQL synchronization 검증
+
+### CI
+
+- GitHub Actions 기반 build / test 자동화
+- 핵심 조회 및 복구 흐름에 대한 회귀 확인 가능
+- README 배지로 기본 상태를 바로 확인 가능
+
+### Exception Handling
+
+- **Validation Error**
+  - 잘못된 요청값, 필수값 누락, 잘못된 query parameter 차단
+- **Cache Recovery Case**
+  - full miss / partial miss / meta miss를 예외가 아닌 복구 경로로 처리
+- **Infrastructure Error**
+  - Redis 또는 PostgreSQL 이상은 Health API와 로그 기준으로 확인 가능
+- **Consistency Consideration**
+  - 동기화가 주기 작업 기준이므로, 지연 반영과 복구 시점까지 설계에 포함
+
+</br>
+
+## 7. Extensibility
+
+이 구조는 현재 기능 구현만이 아니라 이후 운영 확장을 고려해 설계했습니다.
 
 - stale index 정리 로직 추가
 - message index TTL 정책 보완
 - unread / read pointer 확장
-- WebSocket 기반 실시간 전파 기능 추가
+- WebSocket 또는 SSE 기반 실시간 전파 연계
 - Flyway 기반 migration 적용
-- 운영 메트릭 및 모니터링 확장
+- metrics / tracing / alerting 강화
+- 분산 캐시 또는 sharding 전략 확장
 
-<br/>
+핵심은 기능을 많이 넣는 것보다, **변경이 생겨도 구조가 쉽게 무너지지 않도록 만드는 것**입니다.
 
-## 18. Documents
+</br>
 
-- [Test Report](docs/test-report.md)
+## 8. Blog / Notes
+
+### Project Docs
+
 - [Design Notes](docs/design-notes.md)
-- [Troubleshooting Notes](docs/troubleshooting.md)
-- [Architecture Diagram](docs/architecture.png)
-- Test Log Images: `docs/image/**`
-
-<br/>
-
-## 19. Conclusion
-
-이 프로젝트는 Redis를 단순 Pub/Sub broker로 사용하는 수준을 넘어,
-real-time message processing layer + cache layer로 확장하고,
-PostgreSQL을 fallback and final persistence layer로 분리하여
-성능, 복구 가능성, 최종 정합성을 함께 고려한 구조를 포트폴리오 형태로 재구성한 결과물입니다.
-
-단순 기능 구현이 아니라,
-cache miss 복구, state 기반 처리, scheduled synchronization, 책임 분리를 중심으로
-운영형 메시지 백엔드 구조를 설계했다는 점에 의미가 있습니다.
+- [Test Report](docs/test-report.md)
+- [Troubleshooting](docs/troubleshooting.md)
