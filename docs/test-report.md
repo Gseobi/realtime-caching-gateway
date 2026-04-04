@@ -291,15 +291,15 @@ PostgreSQL fallback과 주기적 synchronization을 통해
 ## 6. Notes
 
 - 자동화 테스트는 `src/test/java/**` 경로의 Spring Boot Test / MockMvc 기반 테스트 코드로 구성
-- 상세 실행 로그 및 스크린샷은 `docs/image/**` 참고
+- 상세 실행 로그 및 스크린샷은 `docs/images/**` 참고
 - fallback / recovery / synchronization 시나리오는 로컬 환경 기준 수동 / 통합 테스트로 검증
 
 <br/>
 
 ## 7. Test Report Snapshot
 
-![Test Report Summary](image/test-report-summary.png)
-![Test Health Api](image/test-health-api.png)
-![Test Message Api](image/test-message-api.png)
-![Test Message Recovery](image/test-message-recovery.png)
-![GitHub Actions Pass](image/github-actions-pass.png)
+![Test Report Summary](images/test-report-summary.png)
+![Test Health Api](images/test-health-api.png)
+![Test Message Api](images/test-message-api.png)
+![Test Message Recovery](images/test-message-recovery.png)
+![GitHub Actions Pass](images/github-actions-pass.png)
