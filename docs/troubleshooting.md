@@ -1,3 +1,5 @@
+> Historical: write-behind 기준의 과거 기록입니다. 현재 설계와 검증은 `durable-message-design.md`, `durable-message-verification.md`를 확인하세요.
+
 # Troubleshooting Notes
 
 ## 1. Overview

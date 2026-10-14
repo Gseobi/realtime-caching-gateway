@@ -15,6 +15,13 @@ public interface MessageMapper {
                                        @Param("after") LocalDateTime after,
                                        @Param("limit") Integer limit);
 
+    void insertMessage(@Param("m") MessageCacheData message);
+
+    List<String> findMessageIds(@Param("conversationId") String conversationId,
+                               @Param("before") LocalDateTime before,
+                               @Param("after") LocalDateTime after,
+                               @Param("limit") Integer limit);
+
     void upsertMessages(@Param("messages") List<MessageCacheData> messages);
 
     void upsertConversationState(@Param("conversationId") String conversationId,

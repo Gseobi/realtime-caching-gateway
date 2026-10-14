@@ -5,19 +5,15 @@ public final class RedisKeyPolicy {
     private RedisKeyPolicy() {}
 
     public static String conversationMeta(String conversationId) {
-        return "conv:" + conversationId + ":meta";
+        return "v2:conv:" + conversationId + ":meta";
     }
 
     public static String conversationMessageIndex(String conversationId) {
-        return "conv:" + conversationId + ":message_index";
+        return "v2:conv:" + conversationId + ":message_index";
     }
 
     public static String message(String messageId) {
-        return "msg:" + messageId;
-    }
-
-    public static String dirtyConversations() {
-        return "sync:dirty:conversations";
+        return "v2:msg:" + messageId;
     }
 
     public static String pubsubMessageIn() {

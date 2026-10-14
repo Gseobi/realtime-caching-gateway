@@ -16,14 +16,14 @@ public class ConversationService {
     private final ConversationStateMapper conversationStateMapper;
 
     public ConversationMetaResponse getConversationMeta(String conversationId) {
-        ConversationMetaCacheData cached = this.messageCacheRepository.findConversationMeta(conversationId);
-        if (cached != null) {
-            return toResponse(cached);
-        }
-
-        ConversationMetaCacheData dbMeta = this.conversationStateMapper.findConversationMeta(conversationId);
+        // Mutable state always comes from the monotonic DB projection.
+        ConversationMetaCacheData dbMeta = conversationStateMapper.findConversationMeta(conversationId);
         if (dbMeta != null) {
-            this.messageCacheRepository.saveConversationMeta(dbMeta);
+            try {
+                messageCacheRepository.saveConversationMeta(dbMeta);
+            } catch (RuntimeException ex) {
+                // Cache availability does not decide whether durable state is readable.
+            }
             return toResponse(dbMeta);
         }
 

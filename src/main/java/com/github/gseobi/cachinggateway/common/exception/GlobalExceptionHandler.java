@@ -60,6 +60,13 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.builder()
+            .timestamp(LocalDateTime.now()).status(409).error("CONFLICT")
+            .message("messageId already exists").path(request.getRequestURI()).build());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleInternal(Exception ex, HttpServletRequest httpServletRequest) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

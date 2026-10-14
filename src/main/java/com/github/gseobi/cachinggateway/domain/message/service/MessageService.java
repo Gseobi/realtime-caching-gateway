@@ -1,6 +1,5 @@
 package com.github.gseobi.cachinggateway.domain.message.service;
 
-import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageResponse;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
@@ -23,6 +22,7 @@ public class MessageService {
     private final MessageCacheRepository messageCacheRepository;
     private final MessageMapper messageMapper;
     private final MessagePublisher messagePublisher;
+    private final MessagePersistenceService persistence;
 
     public void saveMessage(MessageSaveRequest messageSaveRequest) {
         LocalDateTime sentAt = messageSaveRequest.getSentAt() == null ? LocalDateTime.now() : messageSaveRequest.getSentAt();
@@ -34,82 +34,50 @@ public class MessageService {
                 .messageType(messageSaveRequest.getMessageType())
                 .content(messageSaveRequest.getContent())
                 .metadataJson(messageSaveRequest.getMetadataJson())
-                .sentAt(messageSaveRequest.getSentAt())
+                .sentAt(sentAt)
                 .build();
 
-        this.messageCacheRepository.saveMessage(message);
-        this.messageCacheRepository.saveConversationMeta(
-                ConversationMetaCacheData.builder()
-                        .conversationId(messageSaveRequest.getConversationId())
-                        .lastMessageId(messageSaveRequest.getMessageId())
-                        .lastMessagePreview(preview(messageSaveRequest.getContent(), messageSaveRequest.getMessageType().name()))
-                        .lastSenderId(messageSaveRequest.getSenderId())
-                        .lastSentAt(sentAt)
-                        .updatedAt(LocalDateTime.now())
-                        .build()
-        );
-        this.messageCacheRepository.markDirty(messageSaveRequest.getConversationId());
-        this.messagePublisher.publish(message);
-
-        log.info("Message saved to Redis and published. " +
-                 "conversationId:{}, messageId={}, senderId={}, type={}",
-                messageSaveRequest.getConversationId(), messageSaveRequest.getMessageId(),
-                messageSaveRequest.getSenderId(), messageSaveRequest.getMessageType());
+        // This call returns only after the message and conversation state commit.
+        persistence.persist(message, preview(message.getContent(), message.getMessageType().name()));
+        try {
+            messageCacheRepository.saveMessage(message);
+        } catch (RuntimeException ex) {
+            log.warn("Cache projection failed after durable commit. messageId={}", message.getMessageId(), ex);
+        }
+        try {
+            messagePublisher.publish(message);
+        } catch (RuntimeException ex) {
+            // Pub/Sub is best effort; clients recover committed messages through GET.
+            log.warn("Live publication failed after durable commit. messageId={}", message.getMessageId(), ex);
+        }
     }
 
-    public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest messageQueryRequest) {
-        Integer limit = messageQueryRequest.getLimit() == null ? 50 : messageQueryRequest.getLimit();
-
-        List<String> ids = this.messageCacheRepository.findMessageIds(
-                conversationId,
-                messageQueryRequest.getBefore(),
-                messageQueryRequest.getAfter(),
-                limit
-        );
-
-        if (ids.isEmpty()) {
-            log.info("Redis full miss detected. conversationId={}, before={}, after={}, limit={}",
-                    conversationId, messageQueryRequest.getBefore(), messageQueryRequest.getAfter(), limit);
-
-            List<MessageCacheData> fallback = this.messageMapper.findMessages(
-                    conversationId,
-                    messageQueryRequest.getBefore(),
-                    messageQueryRequest.getAfter(),
-                    limit
-            );
-
-            if (!fallback.isEmpty()) {
-                this.messageCacheRepository.refreshMessages(conversationId, fallback);
-                log.info("DB fallback result refreshed to Redis. conversationId={}, count={}",
-                        conversationId, fallback.size());
+    public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest query) {
+        int limit = query.getLimit() == null ? 50 : query.getLimit();
+        // The DB owns membership and ordering: a partly warmed index is not a complete page.
+        List<String> ids = messageMapper.findMessageIds(conversationId, query.getBefore(), query.getAfter(), limit);
+        if (ids.isEmpty()) return List.of();
+        try {
+            List<MessageCacheData> cached = messageCacheRepository.findMessagesByIds(ids);
+            if (cached.size() == ids.size()) {
+                java.util.Map<String, MessageCacheData> byId = cached.stream().collect(
+                    java.util.stream.Collectors.toMap(MessageCacheData::getMessageId, m -> m));
+                if (ids.stream().allMatch(id -> byId.containsKey(id)
+                        && conversationId.equals(byId.get(id).getConversationId()))) {
+                    return ids.stream().map(byId::get).map(this::toResponse).toList();
+                }
             }
-            return fallback.stream().map(this::toResponse).toList();
+        } catch (RuntimeException ex) {
+            log.warn("Cache read failed; using durable messages. conversationId={}", conversationId, ex);
         }
-
-        List<MessageCacheData> cached = this.messageCacheRepository.findMessagesByIds(ids);
-
-        if (cached.size() != ids.size()) {
-            log.warn("Redis partial miss detected. conversationId={}, requestedIds={}, cachedMessages={}",
-                    conversationId, ids.size(), cached.size());
-
-            List<MessageCacheData> fallback = this.messageMapper.findMessages(
-                    conversationId,
-                    messageQueryRequest.getBefore(),
-                    messageQueryRequest.getAfter(),
-                    limit
-            );
-
-            if (!fallback.isEmpty()) {
-                this.messageCacheRepository.refreshMessages(conversationId, fallback);
-                log.info("DB fallback result refreshed to Redis after partial miss. conversationId={}, count={}",
-                        conversationId, fallback.size());
-            }
-
-            return fallback.stream().map(this::toResponse).toList();
+        List<MessageCacheData> durable = messageMapper.findMessages(
+            conversationId, query.getBefore(), query.getAfter(), limit);
+        try {
+            messageCacheRepository.refreshMessages(conversationId, durable);
+        } catch (RuntimeException ex) {
+            log.warn("Cache refresh failed. conversationId={}", conversationId, ex);
         }
-
-        log.info("Redis cache hit. conversationId={}, count={}", conversationId, cached.size());
-        return cached.stream().map(this::toResponse).toList();
+        return durable.stream().map(this::toResponse).toList();
     }
 
     private MessageResponse toResponse(MessageCacheData data) {

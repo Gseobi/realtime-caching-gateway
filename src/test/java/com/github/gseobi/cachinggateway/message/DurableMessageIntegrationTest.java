@@ -84,4 +84,36 @@ class DurableMessageIntegrationTest {
         assertThat(stateMapper.findConversationMeta(newer.getConversationId()).getLastMessageId())
             .isEqualTo(newer.getMessageId());
     }
+    @Test void cacheReadAndRefreshFailureStillReturnsDurableMessages() {
+        MessageSaveRequest r = request(); service.saveMessage(r);
+        doThrow(new IllegalStateException("cache unavailable")).when(cache).findMessagesByIds(anyList());
+        doThrow(new IllegalStateException("cache unavailable")).when(cache).refreshMessages(anyString(), anyList());
+        assertThat(service.getMessages(r.getConversationId(),
+            new com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest()))
+            .extracting("messageId").containsExactly(r.getMessageId());
+    }
+
+    @Test void databaseInsertFailureNeverWritesCacheOrPublishes() {
+        MessageSaveRequest r = request();
+        doThrow(new IllegalStateException("DB unavailable")).when(mapper).insertMessage(any());
+        assertThatThrownBy(() -> service.saveMessage(r)).isInstanceOf(IllegalStateException.class);
+        verifyNoInteractions(cache, publisher);
+    }
+
+    @Test void concurrentArrivalsKeepNewestState() throws Exception {
+        MessageSaveRequest newer = request();
+        MessageSaveRequest older = request(); older.setConversationId(newer.getConversationId());
+        older.setSentAt(newer.getSentAt().minusMinutes(1));
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var a = pool.submit(() -> { start.await(); service.saveMessage(newer); return null; });
+            var z = pool.submit(() -> { start.await(); service.saveMessage(older); return null; });
+            start.countDown(); a.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            z.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        assertThat(mapper.findMessages(newer.getConversationId(), null, null, 50)).hasSize(2);
+        assertThat(stateMapper.findConversationMeta(newer.getConversationId()).getLastMessageId())
+            .isEqualTo(newer.getMessageId());
+    }
+
 }
