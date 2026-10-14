@@ -1,0 +1,90 @@
+[
+  {
+    "at": "2026-10-14T15:31:47.690330+00:00",
+    "stage": "post",
+    "messageId": "fault-e4f736adb843-before",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-14T15:31:47.701131+00:00",
+    "stage": "before_stop",
+    "status": 200,
+    "ids": [
+      "fault-e4f736adb843-before"
+    ]
+  },
+  {
+    "at": "2026-10-14T15:31:47.989070+00:00",
+    "stage": "cache_stopped",
+    "container": "codex-durable-valkey-20261015"
+  },
+  {
+    "at": "2026-10-14T15:31:52.015488+00:00",
+    "stage": "post",
+    "messageId": "fault-e4f736adb843-during",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-14T15:31:56.054861+00:00",
+    "stage": "during_stop",
+    "status": 200,
+    "ids": [
+      "fault-e4f736adb843-during",
+      "fault-e4f736adb843-before"
+    ]
+  },
+  {
+    "at": "2026-10-14T15:31:56.175269+00:00",
+    "stage": "db_during_stop",
+    "ids": [
+      "fault-e4f736adb843-during",
+      "fault-e4f736adb843-before"
+    ]
+  },
+  {
+    "at": "2026-10-14T15:31:57.043967+00:00",
+    "stage": "after_restart",
+    "status": 200,
+    "ids": [
+      "fault-e4f736adb843-during",
+      "fault-e4f736adb843-before"
+    ]
+  },
+  {
+    "at": "2026-10-14T15:31:57.117309+00:00",
+    "stage": "cache_reprojected",
+    "messageId": "fault-e4f736adb843-during",
+    "exists": "1"
+  },
+  {
+    "at": "2026-10-14T15:31:57.283162+00:00",
+    "stage": "post",
+    "messageId": "fault-e4f736adb843-rollback",
+    "status": 500,
+    "response": "{\"timestamp\":\"2026-10-14T15:31:57.277977168\",\"status\":500,\"error\":\"INTERNAL_SERVER_ERROR\",\"message\":\"\\n### Error updating database.  Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_11f154b62752\\\"\\n  Detail: Failing row contains (fault-e4f736adb843, fault-e4f736adb843-rollback, fault-e4f736adb843-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-14 15:31:57.206158).\\n### The error may exist in class path resource [mapper/message/MessageMapper.xml]\\n### The error may involve defaultParameterMap\\n### The error occurred while setting parameters\\n### SQL: INSERT INTO conversation_state (             conversation_id,             last_message_id,             last_message_preview,             last_sender_id,             last_sent_at,             updated_at         )         VALUES (             ?,             ?,             ?,             ?,             ?,             CURRENT_TIMESTAMP         )         ON CONFLICT (conversation_id)         DO UPDATE SET         last_message_id = EXCLUDED.last_message_id,         last_message_preview = EXCLUDED.last_message_preview,         last_sender_id = EXCLUDED.last_sender_id,         last_sent_at = EXCLUDED.last_sent_at,         updated_at = CURRENT_TIMESTAMP         WHERE conversation_state.last_sent_at IS NULL            OR (EXCLUDED.last_sent_at, EXCLUDED.last_message_id)               > (conversation_state.last_sent_at, conversation_state.last_message_id)\\n### Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_11f154b62752\\\"\\n  Detail: Failing row contains (fault-e4f736adb843, fault-e4f736adb843-rollback, fault-e4f736adb843-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-14 15:31:57.206158).\\n; ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_11f154b62752\\\"\\n  Detail: Failing row contains (fault-e4f736adb843, fault-e4f736adb843-rollback, fault-e4f736adb843-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-14 15:31:57.206158).\",\"path\":\"/v1/api/conversations/fault-e4f736adb843/messages\"}"
+  },
+  {
+    "at": "2026-10-14T15:31:57.533560+00:00",
+    "stage": "rollback",
+    "rejectedId": "fault-e4f736adb843-rollback",
+    "messageCount": "0",
+    "lastMessageId": "fault-e4f736adb843-during",
+    "cacheExists": "0"
+  },
+  {
+    "at": "2026-10-14T15:31:57.541641+00:00",
+    "stage": "after_rollback",
+    "status": 200,
+    "ids": [
+      "fault-e4f736adb843-during",
+      "fault-e4f736adb843-before"
+    ]
+  },
+  {
+    "at": "2026-10-14T15:31:57.541683+00:00",
+    "stage": "result",
+    "result": "PASS"
+  }
+]

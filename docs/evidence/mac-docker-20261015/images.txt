@@ -1,0 +1,4 @@
+[postgres:16] linux/arm64 sha256:2586e2a95d1c9b31cb2967feb562948f7d364854453d703039b6efa45fe48417
+[redis:7.2.7-alpine] linux/arm64 sha256:ddd16a9b1575a774c7e62956be8daa1de5b32cfb5c25b7a216aefed8e0919f9b
+[valkey/valkey:8.1.3-alpine] linux/arm64 sha256:d827e7f7552cdee40cc7482dbae9da020f42bc47669af6f71182a4ef76a22773
+[codex-durable-verify:20261015] linux/arm64 sha256:9809324b125ebadc9421f27beb74031dbf2461cd61dbcbb0a57dccbdb8a9ea6b

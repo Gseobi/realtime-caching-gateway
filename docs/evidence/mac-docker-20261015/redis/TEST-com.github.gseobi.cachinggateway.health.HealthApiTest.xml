@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.github.gseobi.cachinggateway.health.HealthApiTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-14T15:28:51.101Z" hostname="Gui-MacBookAir.local" time="0.302">
+  <properties/>
+  <testcase name="Health API 정상 응답" classname="com.github.gseobi.cachinggateway.health.HealthApiTest" time="0.302"/>
+  <system-out><![CDATA[2026-10-15T00:28:50.793+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.github.gseobi.cachinggateway.health.HealthApiTest]: HealthApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T00:28:50.801+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.github.gseobi.cachinggateway.RealtimeCachingGatewayApplication for test class com.github.gseobi.cachinggateway.health.HealthApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.11)
+
+2026-10-15T00:28:50.818+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] c.g.g.c.health.HealthApiTest             : Starting HealthApiTest using Java 21.0.10 with PID 4827 (started by gseobi in /Users/gseobi/Developer/Gseobi/worktrees/realtime-caching-gateway-durable)
+2026-10-15T00:28:50.818+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] c.g.g.c.health.HealthApiTest             : The following 1 profile is active: "test"
+2026-10-15T00:28:50.906+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-10-15T00:28:50.906+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-10-15T00:28:50.910+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-10-15T00:28:50.964+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-10-15T00:28:50.978+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.postgresql.jdbc.PgConnection@296949c8
+2026-10-15T00:28:50.978+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-10-15T00:28:51.091+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-15T00:28:51.091+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-15T00:28:51.092+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-10-15T00:28:51.100+09:00  INFO 4827 --- [realtime-caching-gateway] [    Test worker] c.g.g.c.health.HealthApiTest             : Started HealthApiTest in 0.296 seconds (process running for 2.593)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
