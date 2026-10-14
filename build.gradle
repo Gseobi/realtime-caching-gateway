@@ -38,4 +38,9 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    // Explicit agent avoids unsupported self-attachment in restricted Java 21 environments.
+    doFirst {
+        def agent = configurations.testRuntimeClasspath.files.find { it.name.startsWith('mockito-core-') }
+        jvmArgs "-javaagent:${agent.absolutePath}"
+    }
 }

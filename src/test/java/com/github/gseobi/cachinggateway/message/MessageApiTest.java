@@ -39,7 +39,7 @@ class MessageApiTest {
                                   "metadataJson": null,
                                   "sentAt": "2026-03-15T11:40:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
     }
 
@@ -59,7 +59,7 @@ class MessageApiTest {
                                   "metadataJson": "{\\"url\\":\\"https://example.com/sample-image.jpg\\",\\"fileName\\":\\"sample-image.jpg\\"}",
                                   "sentAt": "2026-03-15T11:41:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
     }
 
@@ -79,7 +79,7 @@ class MessageApiTest {
                                   "metadataJson": "{\\"url\\":\\"https://example.com/manual.pdf\\",\\"fileName\\":\\"manual.pdf\\",\\"size\\":123456}",
                                   "sentAt": "2026-03-15T11:42:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
     }
 
@@ -99,7 +99,7 @@ class MessageApiTest {
                                   "metadataJson": null,
                                   "sentAt": "2026-03-15T11:43:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
     }
 
@@ -160,7 +160,7 @@ class MessageApiTest {
                                   "metadataJson": null,
                                   "sentAt": "2026-03-15T11:40:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/v1/api/conversations/{conversationId}/messages", conversationId)
@@ -174,7 +174,7 @@ class MessageApiTest {
                                   "metadataJson": "{\\"url\\":\\"https://example.com/sample-image.jpg\\",\\"fileName\\":\\"sample-image.jpg\\"}",
                                   "sentAt": "2026-03-15T11:41:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/v1/api/conversations/{conversationId}/messages", conversationId)
@@ -188,7 +188,7 @@ class MessageApiTest {
                                   "metadataJson": "{\\"url\\":\\"https://example.com/manual.pdf\\",\\"fileName\\":\\"manual.pdf\\",\\"size\\":123456}",
                                   "sentAt": "2026-03-15T11:42:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/v1/api/conversations/{conversationId}/messages", conversationId)
@@ -202,7 +202,7 @@ class MessageApiTest {
                                   "metadataJson": null,
                                   "sentAt": "2026-03-15T11:43:00"
                                 }
-                                """))
+                                """.replace("msg-", conversationId + "-msg-")))
                 .andExpect(status().isOk());
     }
 

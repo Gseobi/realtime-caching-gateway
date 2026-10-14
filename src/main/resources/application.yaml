@@ -22,7 +22,3 @@ gateway:
   redis:
     message-ttl-seconds: 600
     conversation-meta-ttl-seconds: 360
-  sync:
-    initial-delay-ms: 10000     # 10sec sync cycle initial delay set
-    fixed-delay-ms: 180000      # 3min sync cycle set
-    adjust-cron: "0 0 4 * * *"  # 4am adjust cycle set

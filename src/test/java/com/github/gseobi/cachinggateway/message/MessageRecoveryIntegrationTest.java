@@ -135,6 +135,64 @@ class MessageRecoveryIntegrationTest {
         assertThat(conversationStateMapper.findConversationMeta(conversationId)).isNotNull();
     }
 
+
+    @Autowired com.github.gseobi.cachinggateway.domain.message.service.MessageService messageService;
+
+    @Test
+    void postThenEvictCacheReturnsAcknowledgedMessageWithoutPreseedingDb() throws Exception {
+        String conversationId = "evict-" + java.util.UUID.randomUUID();
+        String id = "m-" + java.util.UUID.randomUUID();
+        var r = new com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest();
+        r.setMessageId(id); r.setConversationId(conversationId); r.setSenderId("user");
+        r.setMessageType(MessageType.TEXT); r.setContent("survives eviction");
+        messageService.saveMessage(r);
+        clearRedisKeys(conversationId, List.of(id));
+        mockMvc.perform(get("/v1/api/conversations/{conversationId}/messages", conversationId))
+            .andExpect(status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].messageId").value(id))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void partlyWarmedIndexCannotHideDurableMessages() throws Exception {
+        String conversationId = "window-" + java.util.UUID.randomUUID();
+        var messages = seedMessagesToPostgres(conversationId,
+            "a-" + java.util.UUID.randomUUID(), "b-" + java.util.UUID.randomUUID(), "c-" + java.util.UUID.randomUUID());
+        clearRedisKeys(conversationId, extractMessageIds(messages));
+        // A narrow earlier query warms only one message and its index.
+        mockMvc.perform(get("/v1/api/conversations/{conversationId}/messages", conversationId).param("limit", "1"))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/v1/api/conversations/{conversationId}/messages", conversationId).param("limit", "50"))
+            .andExpect(status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.length()").value(3));
+    }
+
+    @Test
+    void queryLimitIsBounded() throws Exception {
+        mockMvc.perform(get("/v1/api/conversations/validation/messages").param("limit", "0"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/v1/api/conversations/validation/messages").param("limit", "201"))
+            .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void duplicateIdIsConflictAndCannotOverwriteContent() throws Exception {
+        String conversationId = "duplicate-" + java.util.UUID.randomUUID();
+        String id = "m-" + java.util.UUID.randomUUID();
+        String body = "{\"messageId\":\"" + id + "\",\"senderId\":\"user\",\"messageType\":\"TEXT\",\"content\":\"original\"}";
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                "/v1/api/conversations/{conversationId}/messages", conversationId)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                "/v1/api/conversations/{conversationId}/messages", conversationId)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body.replace("original", "changed")))
+            .andExpect(status().isConflict());
+        assertThat(messageMapper.findMessages(conversationId, null, null, 50))
+            .extracting("content").containsExactly("original");
+    }
+
     private List<MessageCacheData> seedMessagesToPostgres(String conversationId,
                                                           String firstMessageId,
                                                           String secondMessageId,
@@ -203,14 +261,14 @@ class MessageRecoveryIntegrationTest {
     }
 
     private String messageIndexKey(String conversationId) {
-        return "conv:" + conversationId + ":message_index";
+        return "v2:conv:" + conversationId + ":message_index";
     }
 
     private String conversationMetaKey(String conversationId) {
-        return "conv:" + conversationId + ":meta";
+        return "v2:conv:" + conversationId + ":meta";
     }
 
     private String messageKey(String messageId) {
-        return "msg:" + messageId;
+        return "v2:msg:" + messageId;
     }
 }

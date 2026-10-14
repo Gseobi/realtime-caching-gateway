@@ -27,7 +27,7 @@ public class MessageController {
 
     @GetMapping
     public List<MessageResponse> getMessages(@PathVariable("conversationId") String conversationId,
-                                             @ModelAttribute MessageQueryRequest messageQueryRequest) {
+                                             @Valid @ModelAttribute MessageQueryRequest messageQueryRequest) {
         return this.messageService.getMessages(conversationId, messageQueryRequest);
     }
 }

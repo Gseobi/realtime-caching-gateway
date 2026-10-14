@@ -38,3 +38,5 @@ CREATE INDEX IF NOT EXISTS idx_message_conversation_sent_at ON message (conversa
 CREATE INDEX IF NOT EXISTS idx_message_sender_id ON message (sender_id);
 
 
+
+CREATE INDEX IF NOT EXISTS idx_message_page_v2 ON message (conversation_id, sent_at DESC, message_id DESC);

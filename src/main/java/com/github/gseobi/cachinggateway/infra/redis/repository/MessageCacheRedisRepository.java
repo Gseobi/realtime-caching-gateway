@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 @Repository
@@ -36,6 +35,8 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
         hashData.put("conversationId", data.getConversationId());
         hashData.put("senderId", data.getSenderId());
         hashData.put("messageType", data.getMessageType().name());
+        hashData.put("contentNull", Boolean.toString(data.getContent() == null));
+        hashData.put("metadataNull", Boolean.toString(data.getMetadataJson() == null));
         hashData.put("content", data.getContent() == null ? "" : data.getContent());
         hashData.put("metadataJson", data.getMetadataJson() == null ? "" : data.getMetadataJson());
         hashData.put("sentAt", data.getSentAt().toString());
@@ -115,28 +116,6 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     }
 
     @Override
-    public void markDirty(String conversationId) {
-        this.redisTemplate.opsForSet().add(RedisKeyPolicy.dirtyConversations(), conversationId);
-    }
-
-    @Override
-    public Set<String> findDirtyConversationIds() {
-        Set<String> ids = this.redisTemplate.opsForSet().members(RedisKeyPolicy.dirtyConversations());
-        return ids == null ? Collections.emptySet() : ids;
-    }
-
-    @Override
-    public void clearDirty(String conversationId) {
-        this.redisTemplate.opsForSet().remove(RedisKeyPolicy.dirtyConversations(), conversationId);
-    }
-
-    @Override
-    public List<MessageCacheData> findAllCachedMessages(String conversationId) {
-        List<String> ids = findMessageIds(conversationId, null, null, Integer.MAX_VALUE);
-        return findMessagesByIds(ids);
-    }
-
-    @Override
     public ConversationMetaCacheData findConversationMeta(String conversationId) {
         Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.conversationMeta(conversationId));
         if (raw == null || raw.isEmpty()) return null;
@@ -157,14 +136,14 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
                 .conversationId(str(raw.get("conversationId")))
                 .senderId(str(raw.get("senderId")))
                 .messageType(MessageType.valueOf(str(raw.get("messageType"))))
-                .content(str(raw.get("content")))
-                .metadataJson(str(raw.get("metadataJson")))
+                .content(Boolean.parseBoolean(str(raw.get("contentNull"))) ? null : str(raw.get("content")))
+                .metadataJson(Boolean.parseBoolean(str(raw.get("metadataNull"))) ? null : str(raw.get("metadataJson")))
                 .sentAt(LocalDateTime.parse(str(raw.get("sentAt"))))
                 .build();
     }
 
     private double toEpochMillis(LocalDateTime time) {
-        return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        return time.toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
     }
 
     private LocalDateTime parseDateTime(String value) {

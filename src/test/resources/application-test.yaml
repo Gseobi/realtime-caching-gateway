@@ -8,6 +8,7 @@ spring:
   sql:
     init:
       mode: always
+      schema-locations: classpath:db/migration/init_schema_v1.sql
 
   data:
     redis:
