@@ -58,3 +58,19 @@ python3 scripts/verify_http_faults.py --postgres codex-durable-pg-20261015 \
   --output docs/evidence/modules-20261017/valkey/http-faults.json
 docker stop codex-modules-http-valkey-20261017
 ```
+
+## 후속 스켈레톤 및 1차 점검 반영 (2026-10-17)
+
+사용자 요청에 따라 첫 AI 기능 구현 전이라도 연결 계약을 미리 준비했다. `tenant-context`, `crm-core`, `knowledge-core`, `assistant-core`는 compile 가능한 계약 라이브러리이며 실행 앱에 연결하지 않는다. 기존의 “모듈 분리만 구현”이라는 설명은 PR #2 시점의 범위다. 인증·CRM persistence·outbox worker·LLM/RAG adapter는 여전히 미구현이다.
+
+[스켈레톤 구성·발견한 문제·보완·남은 차단 조건](crm-skeleton-review-20261017.md)을 다음 구현의 기준으로 사용한다. 특히 다음 설계를 보완했다.
+
+- tenant context는 인증 증명이 아니며 resource ACL을 별도 확인한다.
+- outbox claim/ack는 tenant·event·lease token·만료 시각을 비교한다. consumer dedup과 aggregate version 검증이 필요하다.
+- 삭제/tombstone 및 ACL revision은 index/cache에서 authoritative 저장소로 재검증한다. 지연 worker가 삭제된 세대를 복원하면 안 된다.
+- 인덱스·출처 identity에 embedding 모델 revision·차원 및 chunking/preprocessing revision을 포함한다.
+- AI 결과는 근거가 있는 응답과 명시적 abstention으로 구분한다. citation은 제공된 evidence의 tenant·문서/ACL version·chunk·index profile과 일치해야 한다.
+- inference 전후 권한 확인, context token budget, deadline/cancellation/concurrency와 수집 URI allowlist는 실제 adapter 구현의 완료 조건이다.
+- 기존 LocalDateTime cursor 의미를 유지하며, timezone/opaque cursor migration은 별도 계약으로 다룬다.
+
+초기 메시지 API의 tenant 미지원과 외부 transaction의 commit 전 cache/publish 문제는 해결된 것으로 간주하지 않는다. 신규 CRM 기능을 기존 서비스에 연결하기 전 반드시 구현·재현 테스트를 완료한다.

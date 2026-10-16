@@ -3,3 +3,15 @@ rootProject.name = 'realtime-caching-gateway'
 include 'messaging-core', 'messaging-application'
 project(':messaging-core').projectDir = file('modules/messaging-core')
 project(':messaging-application').projectDir = file('modules/messaging-application')
+
+include 'tenant-context'
+project(':tenant-context').projectDir = file('modules/tenant-context')
+
+include 'crm-core'
+project(':crm-core').projectDir = file('modules/crm-core')
+
+include 'knowledge-core'
+project(':knowledge-core').projectDir = file('modules/knowledge-core')
+
+include 'assistant-core'
+project(':assistant-core').projectDir = file('modules/assistant-core')

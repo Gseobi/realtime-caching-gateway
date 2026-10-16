@@ -1,0 +1,5 @@
+apply from: rootProject.file('gradle/java-library-conventions.gradle')
+
+dependencies {
+    api project(':knowledge-core')
+}
