@@ -91,3 +91,13 @@ jobs:
           path: |
             build/test-results/test
             build/reports/tests/test
+
+  docker-build:
+    name: Docker packaging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build application image with all modules
+        run: docker build --tag realtime-caching-gateway:ci .

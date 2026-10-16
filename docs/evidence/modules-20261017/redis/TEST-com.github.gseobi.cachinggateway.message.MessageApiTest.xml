@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.github.gseobi.cachinggateway.message.MessageApiTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-16T17:33:59.549Z" hostname="Gui-MacBookAir.local" time="0.273">
+  <properties/>
+  <testcase name="IMAGE 메시지 저장 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.073"/>
+  <testcase name="Recent 메시지 조회 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.059"/>
+  <testcase name="Before 메시지 조회 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.038"/>
+  <testcase name="After 메시지 조회 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.036"/>
+  <testcase name="FILE 메시지 저장 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.01"/>
+  <testcase name="Conversation Meta 조회 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.033"/>
+  <testcase name="SYSTEM 메시지 저장 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.01"/>
+  <testcase name="TEXT 메시지 저장 API 정상 동작" classname="com.github.gseobi.cachinggateway.message.MessageApiTest" time="0.009"/>
+  <system-out><![CDATA[2026-10-17T02:33:59.544+09:00  INFO 2735 --- [realtime-caching-gateway] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.github.gseobi.cachinggateway.message.MessageApiTest]: MessageApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T02:33:59.546+09:00  INFO 2735 --- [realtime-caching-gateway] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.github.gseobi.cachinggateway.RealtimeCachingGatewayApplication for test class com.github.gseobi.cachinggateway.message.MessageApiTest
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
