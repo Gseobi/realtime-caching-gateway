@@ -5,7 +5,7 @@ import com.github.gseobi.cachinggateway.domain.message.model.MessageType;
 import com.github.gseobi.cachinggateway.domain.message.service.MessageService;
 import com.github.gseobi.cachinggateway.infra.persistence.mybatis.MessageMapper;
 import com.github.gseobi.cachinggateway.infra.persistence.mybatis.ConversationStateMapper;
-import com.github.gseobi.cachinggateway.infra.redis.repository.MessageCacheRepository;
+import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import com.github.gseobi.cachinggateway.infra.redis.publisher.MessagePublisher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

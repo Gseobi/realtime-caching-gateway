@@ -3,8 +3,8 @@ package com.github.gseobi.cachinggateway.domain.conversation.service;
 import com.github.gseobi.cachinggateway.common.exception.ResourceNotFoundException;
 import com.github.gseobi.cachinggateway.domain.conversation.dto.ConversationMetaResponse;
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
-import com.github.gseobi.cachinggateway.infra.persistence.mybatis.ConversationStateMapper;
-import com.github.gseobi.cachinggateway.infra.redis.repository.MessageCacheRepository;
+import com.github.gseobi.cachinggateway.port.ConversationStateReader;
+import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +13,11 @@ import org.springframework.stereotype.Service;
 public class ConversationService {
 
     private final MessageCacheRepository messageCacheRepository;
-    private final ConversationStateMapper conversationStateMapper;
+    private final ConversationStateReader conversationStateReader;
 
     public ConversationMetaResponse getConversationMeta(String conversationId) {
         // Mutable state always comes from the monotonic DB projection.
-        ConversationMetaCacheData dbMeta = conversationStateMapper.findConversationMeta(conversationId);
+        ConversationMetaCacheData dbMeta = conversationStateReader.findConversationMeta(conversationId);
         if (dbMeta != null) {
             try {
                 messageCacheRepository.saveConversationMeta(dbMeta);

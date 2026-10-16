@@ -1,10 +1,12 @@
-package com.github.gseobi.cachinggateway.infra.redis.repository;
+package com.github.gseobi.cachinggateway.port;
 
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
+
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 public interface MessageCacheRepository {
     void saveMessage(MessageCacheData data);

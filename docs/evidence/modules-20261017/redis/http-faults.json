@@ -1,0 +1,90 @@
+[
+  {
+    "at": "2026-10-16T17:37:39.374935+00:00",
+    "stage": "post",
+    "messageId": "fault-db8e4e706301-before",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-16T17:37:39.401245+00:00",
+    "stage": "before_stop",
+    "status": 200,
+    "ids": [
+      "fault-db8e4e706301-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:40.044446+00:00",
+    "stage": "cache_stopped",
+    "container": "codex-durable-redis-20261015"
+  },
+  {
+    "at": "2026-10-16T17:37:44.216656+00:00",
+    "stage": "post",
+    "messageId": "fault-db8e4e706301-during",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-16T17:37:48.259483+00:00",
+    "stage": "during_stop",
+    "status": 200,
+    "ids": [
+      "fault-db8e4e706301-during",
+      "fault-db8e4e706301-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:48.397067+00:00",
+    "stage": "db_during_stop",
+    "ids": [
+      "fault-db8e4e706301-during",
+      "fault-db8e4e706301-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:49.030733+00:00",
+    "stage": "after_restart",
+    "status": 200,
+    "ids": [
+      "fault-db8e4e706301-during",
+      "fault-db8e4e706301-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:49.096479+00:00",
+    "stage": "cache_reprojected",
+    "messageId": "fault-db8e4e706301-during",
+    "exists": "1"
+  },
+  {
+    "at": "2026-10-16T17:37:49.288648+00:00",
+    "stage": "post",
+    "messageId": "fault-db8e4e706301-rollback",
+    "status": 500,
+    "response": "{\"timestamp\":\"2026-10-16T17:37:49.283760258\",\"status\":500,\"error\":\"INTERNAL_SERVER_ERROR\",\"message\":\"\\n### Error updating database.  Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_e26d8bc00b99\\\"\\n  Detail: Failing row contains (fault-db8e4e706301, fault-db8e4e706301-rollback, fault-db8e4e706301-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:37:49.190274).\\n### The error may exist in class path resource [mapper/message/MessageMapper.xml]\\n### The error may involve defaultParameterMap\\n### The error occurred while setting parameters\\n### SQL: INSERT INTO conversation_state (             conversation_id,             last_message_id,             last_message_preview,             last_sender_id,             last_sent_at,             updated_at         )         VALUES (             ?,             ?,             ?,             ?,             ?,             CURRENT_TIMESTAMP         )         ON CONFLICT (conversation_id)         DO UPDATE SET         last_message_id = EXCLUDED.last_message_id,         last_message_preview = EXCLUDED.last_message_preview,         last_sender_id = EXCLUDED.last_sender_id,         last_sent_at = EXCLUDED.last_sent_at,         updated_at = CURRENT_TIMESTAMP         WHERE conversation_state.last_sent_at IS NULL            OR (EXCLUDED.last_sent_at, EXCLUDED.last_message_id)               > (conversation_state.last_sent_at, conversation_state.last_message_id)\\n### Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_e26d8bc00b99\\\"\\n  Detail: Failing row contains (fault-db8e4e706301, fault-db8e4e706301-rollback, fault-db8e4e706301-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:37:49.190274).\\n; ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_e26d8bc00b99\\\"\\n  Detail: Failing row contains (fault-db8e4e706301, fault-db8e4e706301-rollback, fault-db8e4e706301-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:37:49.190274).\",\"path\":\"/v1/api/conversations/fault-db8e4e706301/messages\"}"
+  },
+  {
+    "at": "2026-10-16T17:37:49.529826+00:00",
+    "stage": "rollback",
+    "rejectedId": "fault-db8e4e706301-rollback",
+    "messageCount": "0",
+    "lastMessageId": "fault-db8e4e706301-during",
+    "cacheExists": "0"
+  },
+  {
+    "at": "2026-10-16T17:37:49.539991+00:00",
+    "stage": "after_rollback",
+    "status": 200,
+    "ids": [
+      "fault-db8e4e706301-during",
+      "fault-db8e4e706301-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:49.540073+00:00",
+    "stage": "result",
+    "result": "PASS"
+  }
+]

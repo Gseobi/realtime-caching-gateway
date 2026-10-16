@@ -1,5 +1,6 @@
 package com.github.gseobi.cachinggateway.infra.redis.repository;
 
+import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageType;

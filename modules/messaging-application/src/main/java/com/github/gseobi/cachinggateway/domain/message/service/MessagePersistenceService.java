@@ -1,7 +1,7 @@
 package com.github.gseobi.cachinggateway.domain.message.service;
 
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
-import com.github.gseobi.cachinggateway.infra.persistence.mybatis.MessageMapper;
+import com.github.gseobi.cachinggateway.port.MessageStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MessagePersistenceService {
-    private final MessageMapper mapper;
+    private final MessageStore mapper;
 
     @Transactional
     public void persist(MessageCacheData message, String preview) {

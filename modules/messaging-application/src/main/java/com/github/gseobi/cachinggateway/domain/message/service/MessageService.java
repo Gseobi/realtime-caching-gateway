@@ -4,9 +4,9 @@ import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageResponse;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
-import com.github.gseobi.cachinggateway.infra.persistence.mybatis.MessageMapper;
-import com.github.gseobi.cachinggateway.infra.redis.publisher.MessagePublisher;
-import com.github.gseobi.cachinggateway.infra.redis.repository.MessageCacheRepository;
+import com.github.gseobi.cachinggateway.port.MessageStore;
+import com.github.gseobi.cachinggateway.port.MessageEventPublisher;
+import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,8 +20,8 @@ import java.util.List;
 public class MessageService {
 
     private final MessageCacheRepository messageCacheRepository;
-    private final MessageMapper messageMapper;
-    private final MessagePublisher messagePublisher;
+    private final MessageStore messageStore;
+    private final MessageEventPublisher messagePublisher;
     private final MessagePersistenceService persistence;
 
     public void saveMessage(MessageSaveRequest messageSaveRequest) {
@@ -55,7 +55,7 @@ public class MessageService {
     public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest query) {
         int limit = query.getLimit() == null ? 50 : query.getLimit();
         // The DB owns membership and ordering: a partly warmed index is not a complete page.
-        List<String> ids = messageMapper.findMessageIds(conversationId, query.getBefore(), query.getAfter(), limit);
+        List<String> ids = messageStore.findMessageIds(conversationId, query.getBefore(), query.getAfter(), limit);
         if (ids.isEmpty()) return List.of();
         try {
             List<MessageCacheData> cached = messageCacheRepository.findMessagesByIds(ids);
@@ -70,7 +70,7 @@ public class MessageService {
         } catch (RuntimeException ex) {
             log.warn("Cache read failed; using durable messages. conversationId={}", conversationId, ex);
         }
-        List<MessageCacheData> durable = messageMapper.findMessages(
+        List<MessageCacheData> durable = messageStore.findMessages(
             conversationId, query.getBefore(), query.getAfter(), limit);
         try {
             messageCacheRepository.refreshMessages(conversationId, durable);

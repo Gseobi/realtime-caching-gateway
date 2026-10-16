@@ -1,0 +1,33 @@
+
+> Task :messaging-application:dependencies
+
+------------------------------------------------------------
+Project ':messaging-application'
+------------------------------------------------------------
+
+runtimeClasspath - Runtime classpath of source set 'main'.
++--- project :messaging-core
++--- jakarta.validation:jakarta.validation-api -> 3.0.2
++--- org.springframework:spring-context -> 6.2.16
+|    +--- org.springframework:spring-aop:6.2.16
+|    |    +--- org.springframework:spring-beans:6.2.16
+|    |    |    \--- org.springframework:spring-core:6.2.16
+|    |    |         \--- org.springframework:spring-jcl:6.2.16
+|    |    \--- org.springframework:spring-core:6.2.16 (*)
+|    +--- org.springframework:spring-beans:6.2.16 (*)
+|    +--- org.springframework:spring-core:6.2.16 (*)
+|    +--- org.springframework:spring-expression:6.2.16
+|    |    \--- org.springframework:spring-core:6.2.16 (*)
+|    \--- io.micrometer:micrometer-observation:1.15.9
+|         \--- io.micrometer:micrometer-commons:1.15.9
++--- org.springframework:spring-tx -> 6.2.16
+|    +--- org.springframework:spring-beans:6.2.16 (*)
+|    \--- org.springframework:spring-core:6.2.16 (*)
+\--- org.slf4j:slf4j-api -> 2.0.17
+
+(*) - Indicates repeated occurrences of a transitive dependency subtree. Gradle expands transitive dependency subtrees only once per project; repeat occurrences only display the root of the subtree, followed by this annotation.
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+BUILD SUCCESSFUL in 586ms
+1 actionable task: 1 executed

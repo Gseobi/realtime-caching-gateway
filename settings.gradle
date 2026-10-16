@@ -1,1 +1,5 @@
 rootProject.name = 'realtime-caching-gateway'
+
+include 'messaging-core', 'messaging-application'
+project(':messaging-core').projectDir = file('modules/messaging-core')
+project(':messaging-application').projectDir = file('modules/messaging-application')

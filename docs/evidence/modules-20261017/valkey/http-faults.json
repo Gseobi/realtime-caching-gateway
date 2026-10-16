@@ -1,0 +1,90 @@
+[
+  {
+    "at": "2026-10-16T17:37:53.672278+00:00",
+    "stage": "post",
+    "messageId": "fault-5ce289ceffa9-before",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-16T17:37:53.685202+00:00",
+    "stage": "before_stop",
+    "status": 200,
+    "ids": [
+      "fault-5ce289ceffa9-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:37:53.959848+00:00",
+    "stage": "cache_stopped",
+    "container": "codex-durable-valkey-20261015"
+  },
+  {
+    "at": "2026-10-16T17:37:57.988170+00:00",
+    "stage": "post",
+    "messageId": "fault-5ce289ceffa9-during",
+    "status": 200,
+    "response": ""
+  },
+  {
+    "at": "2026-10-16T17:38:02.027399+00:00",
+    "stage": "during_stop",
+    "status": 200,
+    "ids": [
+      "fault-5ce289ceffa9-during",
+      "fault-5ce289ceffa9-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:38:02.143070+00:00",
+    "stage": "db_during_stop",
+    "ids": [
+      "fault-5ce289ceffa9-during",
+      "fault-5ce289ceffa9-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:38:02.931885+00:00",
+    "stage": "after_restart",
+    "status": 200,
+    "ids": [
+      "fault-5ce289ceffa9-during",
+      "fault-5ce289ceffa9-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:38:03.007654+00:00",
+    "stage": "cache_reprojected",
+    "messageId": "fault-5ce289ceffa9-during",
+    "exists": "1"
+  },
+  {
+    "at": "2026-10-16T17:38:03.179859+00:00",
+    "stage": "post",
+    "messageId": "fault-5ce289ceffa9-rollback",
+    "status": 500,
+    "response": "{\"timestamp\":\"2026-10-16T17:38:03.174446875\",\"status\":500,\"error\":\"INTERNAL_SERVER_ERROR\",\"message\":\"\\n### Error updating database.  Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_1d9aa878da0c\\\"\\n  Detail: Failing row contains (fault-5ce289ceffa9, fault-5ce289ceffa9-rollback, fault-5ce289ceffa9-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:38:03.097572).\\n### The error may exist in class path resource [mapper/message/MessageMapper.xml]\\n### The error may involve defaultParameterMap\\n### The error occurred while setting parameters\\n### SQL: INSERT INTO conversation_state (             conversation_id,             last_message_id,             last_message_preview,             last_sender_id,             last_sent_at,             updated_at         )         VALUES (             ?,             ?,             ?,             ?,             ?,             CURRENT_TIMESTAMP         )         ON CONFLICT (conversation_id)         DO UPDATE SET         last_message_id = EXCLUDED.last_message_id,         last_message_preview = EXCLUDED.last_message_preview,         last_sender_id = EXCLUDED.last_sender_id,         last_sent_at = EXCLUDED.last_sent_at,         updated_at = CURRENT_TIMESTAMP         WHERE conversation_state.last_sent_at IS NULL            OR (EXCLUDED.last_sent_at, EXCLUDED.last_message_id)               > (conversation_state.last_sent_at, conversation_state.last_message_id)\\n### Cause: org.postgresql.util.PSQLException: ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_1d9aa878da0c\\\"\\n  Detail: Failing row contains (fault-5ce289ceffa9, fault-5ce289ceffa9-rollback, fault-5ce289ceffa9-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:38:03.097572).\\n; ERROR: new row for relation \\\"conversation_state\\\" violates check constraint \\\"verify_1d9aa878da0c\\\"\\n  Detail: Failing row contains (fault-5ce289ceffa9, fault-5ce289ceffa9-rollback, fault-5ce289ceffa9-rollback, synthetic, 2026-10-15 01:03:00, 2026-10-16 17:38:03.097572).\",\"path\":\"/v1/api/conversations/fault-5ce289ceffa9/messages\"}"
+  },
+  {
+    "at": "2026-10-16T17:38:03.413130+00:00",
+    "stage": "rollback",
+    "rejectedId": "fault-5ce289ceffa9-rollback",
+    "messageCount": "0",
+    "lastMessageId": "fault-5ce289ceffa9-during",
+    "cacheExists": "0"
+  },
+  {
+    "at": "2026-10-16T17:38:03.421205+00:00",
+    "stage": "after_rollback",
+    "status": 200,
+    "ids": [
+      "fault-5ce289ceffa9-during",
+      "fault-5ce289ceffa9-before"
+    ]
+  },
+  {
+    "at": "2026-10-16T17:38:03.421270+00:00",
+    "stage": "result",
+    "result": "PASS"
+  }
+]
