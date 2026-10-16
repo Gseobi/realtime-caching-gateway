@@ -1,0 +1,26 @@
+
+> Task :assistant-core:dependencies
+
+------------------------------------------------------------
+Project ':assistant-core'
+------------------------------------------------------------
+
+runtimeClasspath - Runtime classpath of source set 'main'.
+\--- project :knowledge-core
+     \--- project :tenant-context
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+> Task :crm-core:dependencies
+
+------------------------------------------------------------
+Project ':crm-core'
+------------------------------------------------------------
+
+runtimeClasspath - Runtime classpath of source set 'main'.
+\--- project :tenant-context
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+BUILD SUCCESSFUL in 349ms
+2 actionable tasks: 2 executed

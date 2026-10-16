@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-16T17:50:26.493Z" hostname="Gui-MacBookAir.local" time="0.224">
+  <properties/>
+  <testcase name="queryLimitIsBounded()" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.012"/>
+  <testcase name="duplicateIdIsConflictAndCannotOverwriteContent()" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.061"/>
+  <testcase name="Redis partial miss 발생 시 fallback 후 누락 메시지가 복구된다" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.051"/>
+  <testcase name="postThenEvictCacheReturnsAcknowledgedMessageWithoutPreseedingDb()" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.031"/>
+  <testcase name="conversation meta miss 발생 시 conversation_state 기반으로 meta가 복구된다" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.023"/>
+  <testcase name="partlyWarmedIndexCannotHideDurableMessages()" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.021"/>
+  <testcase name="Redis full miss 발생 시 PostgreSQL fallback 후 Redis refresh가 수행된다" classname="com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest" time="0.021"/>
+  <system-out><![CDATA[2026-10-17T02:50:26.492+09:00  INFO 6126 --- [realtime-caching-gateway] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest]: MessageRecoveryIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T02:50:26.493+09:00  INFO 6126 --- [realtime-caching-gateway] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.github.gseobi.cachinggateway.RealtimeCachingGatewayApplication for test class com.github.gseobi.cachinggateway.message.MessageRecoveryIntegrationTest
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

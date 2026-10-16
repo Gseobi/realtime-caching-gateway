@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.github.gseobi.assistant.contract.GroundingGuardTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-16T17:50:04.895Z" hostname="Gui-MacBookAir.local" time="0.021">
+  <properties/>
+  <testcase name="rejectsForeignTenantCitation()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.011"/>
+  <testcase name="promptEvidenceCannotBeMutatedAfterValidation()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.001"/>
+  <testcase name="acceptsOnlySuppliedSourceIdentity()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.003"/>
+  <testcase name="emptyRetrievalCannotProduceGroundedAnswer()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.002"/>
+  <testcase name="rejectsChunkingRevisionDrift()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.001"/>
+  <testcase name="rejectsStaleContentGeneration()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.001"/>
+  <testcase name="rejectsModelRevisionDrift()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.0"/>
+  <testcase name="rejectsForeignTenantEvidenceBeforeInference()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.0"/>
+  <testcase name="rejectsStaleAclRevision()" classname="com.github.gseobi.assistant.contract.GroundingGuardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

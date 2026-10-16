@@ -56,3 +56,5 @@ Redis client abstraction은 유지하며 서버를 Valkey로 변경했습니다.
 실행 앱(HTTP·MyBatis·Valkey 어댑터) → `messaging-application`(업무 서비스·트랜잭션) → `messaging-core`(모델·포트)로 Gradle 모듈을 분리했습니다. 업무 모듈은 DB·캐시 구현을 직접 참조할 수 없습니다. 기존 `./gradlew test`, `bootRun`, `bootJar` 명령을 유지합니다.
 
 [초기 작업 완료 점검·모듈 경계·CRM/자체 LLM·RAG 후속 계획](docs/crm-foundation-20261017.md)을 참고하세요. 인증·테넌트 격리와 CRM/AI 제품 기능은 후속 작업입니다.
+
+후속 계약 스켈레톤(`tenant-context`, `crm-core`, `knowledge-core`, `assistant-core`)과 [1차 설계 점검 결과](docs/crm-skeleton-review-20261017.md)도 준비했습니다. 이 모듈들은 실행 앱에 아직 연결하지 않았으며 실제 인증·CRM 저장·LLM/RAG 기능은 제공하지 않습니다.

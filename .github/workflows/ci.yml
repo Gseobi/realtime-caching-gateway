@@ -91,6 +91,8 @@ jobs:
           path: |
             build/test-results/test
             build/reports/tests/test
+            modules/**/build/test-results/test
+            modules/**/build/reports/tests/test
 
   docker-build:
     name: Docker packaging

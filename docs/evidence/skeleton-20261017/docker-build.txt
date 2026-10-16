@@ -1,0 +1,113 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 414B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/amazoncorretto:21-alpine
+#2 ...
+
+#3 [auth] library/amazoncorretto:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/amazoncorretto:21-alpine-jdk
+#4 DONE 1.6s
+
+#2 [internal] load metadata for docker.io/library/amazoncorretto:21-alpine
+#2 DONE 1.6s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 198B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/3] FROM docker.io/library/amazoncorretto:21-alpine@sha256:b7451ecea0f2a02b9597493bb57c4014f43c41db4b470a8aee7228d7a0279025
+#6 resolve docker.io/library/amazoncorretto:21-alpine@sha256:b7451ecea0f2a02b9597493bb57c4014f43c41db4b470a8aee7228d7a0279025 done
+#6 DONE 0.0s
+
+#7 [builder 1/9] FROM docker.io/library/amazoncorretto:21-alpine-jdk@sha256:b7451ecea0f2a02b9597493bb57c4014f43c41db4b470a8aee7228d7a0279025
+#7 resolve docker.io/library/amazoncorretto:21-alpine-jdk@sha256:b7451ecea0f2a02b9597493bb57c4014f43c41db4b470a8aee7228d7a0279025 done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 44.59kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/9] WORKDIR /app
+#9 CACHED
+
+#10 [builder 3/9] COPY gradlew .
+#10 CACHED
+
+#11 [builder 4/9] COPY gradle gradle
+#11 DONE 0.0s
+
+#12 [builder 5/9] COPY build.gradle settings.gradle ./
+#12 DONE 0.0s
+
+#13 [builder 6/9] COPY src src
+#13 DONE 0.0s
+
+#14 [builder 7/9] COPY modules modules
+#14 DONE 0.0s
+
+#15 [builder 8/9] RUN chmod +x ./gradlew
+#15 DONE 0.1s
+
+#16 [builder 9/9] RUN ./gradlew clean bootJar --no-daemon
+#16 0.173 Downloading https://services.gradle.org/distributions/gradle-8.14.4-bin.zip
+#16 1.582 .............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%..............100%
+#16 6.964 
+#16 6.964 Welcome to Gradle 8.14.4!
+#16 6.964 
+#16 6.965 Here are the highlights of this release:
+#16 6.965  - Java 24 support
+#16 6.965  - GraalVM Native Image toolchain selection
+#16 6.965  - Enhancements to test reporting
+#16 6.965  - Build Authoring improvements
+#16 6.965 
+#16 6.965 For more details see https://docs.gradle.org/8.14.4/release-notes.html
+#16 6.965 
+#16 6.965 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.4/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+#16 7.365 Daemon will be stopped at the end of the build 
+#16 33.67 > Task :clean UP-TO-DATE
+#16 33.67 > Task :assistant-core:clean UP-TO-DATE
+#16 33.67 > Task :crm-core:clean UP-TO-DATE
+#16 33.67 > Task :knowledge-core:clean UP-TO-DATE
+#16 33.67 > Task :messaging-application:clean UP-TO-DATE
+#16 33.67 > Task :messaging-core:clean UP-TO-DATE
+#16 33.67 > Task :tenant-context:clean UP-TO-DATE
+#16 34.96 > Task :messaging-core:compileJava
+#16 36.37 > Task :messaging-application:compileJava
+#16 39.86 > Task :compileJava
+#16 39.86 > Task :processResources
+#16 39.86 > Task :classes
+#16 39.86 > Task :resolveMainClassName
+#16 39.86 > Task :messaging-application:processResources NO-SOURCE
+#16 39.86 > Task :messaging-application:classes
+#16 39.96 > Task :messaging-application:jar
+#16 39.96 > Task :messaging-core:processResources NO-SOURCE
+#16 39.96 > Task :messaging-core:classes
+#16 39.96 > Task :messaging-core:jar
+#16 40.81 > Task :bootJar
+#16 40.81 
+#16 40.81 BUILD SUCCESSFUL in 40s
+#16 40.81 15 actionable tasks: 8 executed, 7 up-to-date
+#16 DONE 40.9s
+
+#17 [stage-1 2/3] WORKDIR /app
+#17 CACHED
+
+#18 [stage-1 3/3] COPY --from=builder /app/build/libs/*.jar app.jar
+#18 DONE 0.0s
+
+#19 exporting to image
+#19 exporting layers
+#19 exporting layers 0.5s done
+#19 exporting manifest sha256:ea45144f8430187de4721b467f42100af233688e0e2be8369e3c173b2ae28d39
+#19 exporting manifest sha256:ea45144f8430187de4721b467f42100af233688e0e2be8369e3c173b2ae28d39 done
+#19 exporting config sha256:a0f401436cb2b05ef3fa3d5ac3acfc1949771d8b254822d15cd69d72f0cc6279 done
+#19 exporting attestation manifest sha256:3249068971a904ab3c0b1f5a44d6fcc2712282d7d99bc3edba64620f7e7f901a done
+#19 exporting manifest list sha256:664f7785a997db45a0001e7c162ecfe8cb42e765228783c9e716802ed56147fc done
+#19 naming to docker.io/library/codex-crm-skeleton:20261017 done
+#19 unpacking to docker.io/library/codex-crm-skeleton:20261017 0.1s done
+#19 DONE 0.7s

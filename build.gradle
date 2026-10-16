@@ -8,6 +8,9 @@ group = 'com.github.gseobi'
 version = '0.0.1-SNAPSHOT'
 description = 'realtime-caching-gateway'
 
+// Share the selected Boot BOM with library convention scripts.
+ext.springBootBom = org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

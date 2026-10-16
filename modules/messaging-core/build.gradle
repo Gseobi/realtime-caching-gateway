@@ -1,12 +1,5 @@
-plugins {
-    id 'java-library'
-    id 'io.spring.dependency-management'
-}
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
-repositories { mavenCentral() }
-dependencyManagement {
-    imports { mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES }
-}
+apply from: rootProject.file('gradle/java-library-conventions.gradle')
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
