@@ -13,6 +13,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import com.github.gseobi.cachinggateway.domain.conversation.service.ConversationService;
+import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
@@ -22,10 +28,57 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 class DurableMessageIntegrationTest {
     @Autowired MessageService service;
+    @Autowired ConversationService conversations;
+    @Autowired PlatformTransactionManager transactionManager;
     @MockitoSpyBean MessageMapper mapper;
     @Autowired ConversationStateMapper stateMapper;
     @MockitoBean MessageCacheRepository cache;
     @MockitoBean MessagePublisher publisher;
+
+    @Test void externalCommitProjectsOnlyAfterCommit() {
+        var request = request();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            service.saveMessage(request);
+            verifyNoInteractions(cache, publisher);
+        });
+        verify(cache).saveMessage(argThat(message -> request.getMessageId().equals(message.getMessageId())));
+        verify(publisher).publish(argThat(message -> request.getMessageId().equals(message.getMessageId())));
+        assertThat(mapper.findMessages(request.getConversationId(), null, null, 50)).hasSize(1);
+    }
+
+    @Test void externalRollbackDoesNotWarmCacheEvenAfterReadingOwnWrites() {
+        var request = request();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            service.saveMessage(request);
+            assertThat(service.getMessages(request.getConversationId(), new MessageQueryRequest()))
+                    .extracting("messageId").containsExactly(request.getMessageId());
+            assertThat(conversations.getConversationMeta(request.getConversationId()).getLastMessageId())
+                    .isEqualTo(request.getMessageId());
+            status.setRollbackOnly();
+        });
+        assertThat(mapper.findMessages(request.getConversationId(), null, null, 50)).isEmpty();
+        assertThat(stateMapper.findConversationMeta(request.getConversationId())).isNull();
+        verifyNoInteractions(cache, publisher);
+    }
+
+    @Test void savepointRollbackDiscardsOnlyProjectionForRolledBackWrite() {
+        var kept = request();
+        var discarded = request();
+        var nested = new TransactionTemplate(transactionManager);
+        nested.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            service.saveMessage(kept);
+            nested.executeWithoutResult(inner -> {
+                service.saveMessage(discarded);
+                inner.setRollbackOnly();
+            });
+        });
+        assertThat(mapper.findMessages(discarded.getConversationId(), null, null, 50)).isEmpty();
+        assertThat(mapper.findMessages(kept.getConversationId(), null, null, 50)).hasSize(1);
+        verify(cache).saveMessage(argThat(message -> kept.getMessageId().equals(message.getMessageId())));
+        verify(publisher).publish(argThat(message -> kept.getMessageId().equals(message.getMessageId())));
+        verifyNoMoreInteractions(cache, publisher);
+    }
 
     private MessageSaveRequest request() {
         MessageSaveRequest r = new MessageSaveRequest();

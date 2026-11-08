@@ -30,7 +30,7 @@ tenant-context  <- crm-core
 | 동일 차원의 embedding도 모델/청킹 버전이 다르면 재사용 불가 | EmbeddingProfile(model revision, dimensions), IndexProfile(embedding, chunking/preprocessing revision), citation에도 index identity 포함 | index namespace와 cache key에 profile 적용, 재구축·dual-index 전환 검증 |
 | 삭제된 문서가 오래된 index/cache 또는 지연된 ingestion 작업으로 재등장할 수 있음 | DocumentRef generation/ACL revision, tombstone-first delete와 stale worker fencing 계약 명시 | authoritative 저장소에서 version/ACL/deleted 확인. vector DB에 저장한 ACL 복사본만 신뢰하지 않음 |
 | outbox worker lease 만료 후 오래된 작업자가 새 worker의 결과를 덮을 수 있음 | claim의 atomicity 및 event ID+tenant+lease token+DB 시간 비교 계약 추가 | 실제 SQL CAS, crash/reclaim, consumer event ID dedup 및 aggregate version 순서 테스트 필요. exactly-once를 주장하지 않음 |
-| 기존 REQUIRED 저장 서비스가 외부 트랜잭션에 참여하면 commit 전 cache/publish 가능 | 기존 설계의 선행 차단 조건을 유지·명확화 | 실제 CRM mutation 경로 연결 전에 after-commit commit/rollback 테스트와 구현 필요. outbox는 같은 business transaction에 append |
+| 기존 REQUIRED 저장 서비스가 외부 트랜잭션에 참여하면 commit 전 cache/publish 가능 | [후속 작업](crm-transaction-boundary-20261108.md)에서 커밋 후 처리와 트랜잭션 내 조회의 캐시 우회를 적용 | 내구성 있는 이벤트는 여전히 outbox가 필요하며 같은 business transaction에 append |
 | 기존 timestamp-without-timezone API를 Instant로 바꾸면 시각 의미가 바뀔 수 있음 | MessageCursor는 기존 LocalDateTime tuple 의미 유지 | cursor는 tenant/conversation/direction/filter에 결속한 opaque codec 필요. UTC API 전환은 명시적 migration/versioning 후 적용 |
 | 수집 URI/LLM context를 무제한 처리하면 내부망 접근·자원 고갈 가능 | URI는 명령 계약일 뿐 직접 fetch하지 않음. deadline/model revision/output budget 전달 계약 명시 | fetch allowlist, redirect/내부 IP 차단, input/context token limits, concurrency/cancellation/queue bounds를 adapter에서 강제 |
 

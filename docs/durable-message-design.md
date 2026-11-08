@@ -13,7 +13,7 @@
 - message insert 또는 state 갱신 실패는 rollback한다. 캐시와 publish 호출은 DB service가 반환한 뒤 수행한다.
 - Valkey cache projection과 Pub/Sub은 best effort다. 실패는 로그를 남기고 durable write의 성공을 취소하지 않는다.
 - Pub/Sub은 durable delivery가 아니다. 접속 중 이벤트 수신을 보장하지 않으며 GET으로 이력을 복구한다.
-- 현재 HTTP 진입점에는 외부 transaction이 없다. 다른 transactional caller로 연결할 때는 after-commit event 경계를 추가해야 한다.
+- HTTP 진입점에서는 저장 트랜잭션이 끝난 뒤 projection한다. 같은 PostgreSQL 트랜잭션에 참여한 호출은 [외부 트랜잭션 경계](crm-transaction-boundary-20261108.md)에 따라 최종 커밋 후 projection한다.
 
 ## 조회와 최신 상태
 

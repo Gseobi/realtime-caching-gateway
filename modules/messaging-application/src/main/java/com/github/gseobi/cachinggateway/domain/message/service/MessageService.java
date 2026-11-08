@@ -10,9 +10,14 @@ import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -37,8 +42,37 @@ public class MessageService {
                 .sentAt(sentAt)
                 .build();
 
-        // This call returns only after the message and conversation state commit.
         persistence.persist(message, preview(message.getContent(), message.getMessageType().name()));
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            projectCommittedMessage(message);
+        } else if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                private final Set<Object> laterSavepoints =
+                        Collections.newSetFromMap(new IdentityHashMap<>());
+                private boolean discarded;
+
+                @Override
+                public void savepoint(Object savepoint) {
+                    laterSavepoints.add(savepoint);
+                }
+
+                @Override
+                public void savepointRollback(Object savepoint) {
+                    // An older savepoint can undo this write, even if the outer transaction commits.
+                    if (!laterSavepoints.contains(savepoint)) discarded = true;
+                }
+
+                @Override
+                public void afterCommit() {
+                    if (!discarded) projectCommittedMessage(message);
+                }
+            });
+        } else {
+            log.warn("Skipping projection without transaction synchronization. messageId={}", message.getMessageId());
+        }
+    }
+
+    private void projectCommittedMessage(MessageCacheData message) {
         try {
             messageCacheRepository.saveMessage(message);
         } catch (RuntimeException ex) {
@@ -54,6 +88,11 @@ public class MessageService {
 
     public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest query) {
         int limit = query.getLimit() == null ? 50 : query.getLimit();
+        // A transaction can read its own uncommitted writes. Keep its snapshot out of shared cache.
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            return messageStore.findMessages(conversationId, query.getBefore(), query.getAfter(), limit)
+                    .stream().map(this::toResponse).toList();
+        }
         // The DB owns membership and ordering: a partly warmed index is not a complete page.
         List<String> ids = messageStore.findMessageIds(conversationId, query.getBefore(), query.getAfter(), limit);
         if (ids.isEmpty()) return List.of();

@@ -7,6 +7,7 @@ import com.github.gseobi.cachinggateway.port.ConversationStateReader;
 import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -19,10 +20,12 @@ public class ConversationService {
         // Mutable state always comes from the monotonic DB projection.
         ConversationMetaCacheData dbMeta = conversationStateReader.findConversationMeta(conversationId);
         if (dbMeta != null) {
-            try {
-                messageCacheRepository.saveConversationMeta(dbMeta);
-            } catch (RuntimeException ex) {
-                // Cache availability does not decide whether durable state is readable.
+            if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+                try {
+                    messageCacheRepository.saveConversationMeta(dbMeta);
+                } catch (RuntimeException ex) {
+                    // Cache availability does not decide whether durable state is readable.
+                }
             }
             return toResponse(dbMeta);
         }

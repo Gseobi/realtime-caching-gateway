@@ -20,7 +20,7 @@ Both libraries use Gradle java-library and the same Spring Boot dependency BOM a
 
 Existing Java model/DTO/service package names and HTTP payloads remain stable; the cache interface moved from infra.redis.repository to port. MessageMapper remains the MyBatis mapping seam, so existing database fault injection exercises the real adapter. Spring scans services in library JARs; the executable JAR includes both module JARs. Docker now copies modules before building. CI adds Docker packaging alongside the Redis/Valkey regression matrix. No extra deployment or microservice is required.
 
-The current service must still be called outside an enclosing transaction: REQUIRED persistence can join a caller transaction, so a future transactional CRM caller requires after-commit projection. Separating the libraries does not solve that issue. Do not wire an AI indexing listener to today's best-effort Pub/Sub and assume durable delivery.
+REQUIRED persistence can join a caller transaction. [The transaction boundary follow-up](crm-transaction-boundary-20261108.md) defers projection until that transaction commits and bypasses shared cache for transactional reads. Do not wire an AI indexing listener to today's best-effort Pub/Sub and assume durable delivery.
 
 ## Ordered CRM / AI backlog
 
@@ -73,4 +73,4 @@ docker stop codex-modules-http-valkey-20261017
 - inference 전후 권한 확인, context token budget, deadline/cancellation/concurrency와 수집 URI allowlist는 실제 adapter 구현의 완료 조건이다.
 - 기존 LocalDateTime cursor 의미를 유지하며, timezone/opaque cursor migration은 별도 계약으로 다룬다.
 
-초기 메시지 API의 tenant 미지원과 외부 transaction의 commit 전 cache/publish 문제는 해결된 것으로 간주하지 않는다. 신규 CRM 기능을 기존 서비스에 연결하기 전 반드시 구현·재현 테스트를 완료한다.
+외부 트랜잭션 경계는 [후속 작업](crm-transaction-boundary-20261108.md)에서 보완했다. 신규 CRM 기능을 기존 서비스에 연결하기 전 tenant 인증·권한과 데이터 격리를 구현하고 검증해야 한다.
