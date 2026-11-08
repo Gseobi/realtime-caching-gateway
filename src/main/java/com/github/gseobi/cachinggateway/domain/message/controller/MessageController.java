@@ -7,6 +7,9 @@ import com.github.gseobi.cachinggateway.domain.message.service.MessageService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,10 +22,15 @@ public class MessageController {
     private final MessageService messageService;
 
     @PostMapping
-    public void saveMessage(@NotBlank @PathVariable("conversationId") String conversationId,
-                            @Valid @RequestBody MessageSaveRequest messageSaveRequest) {
+    public ResponseEntity<Void> saveMessage(@NotBlank @PathVariable("conversationId") String conversationId,
+                            @Valid @RequestBody MessageSaveRequest messageSaveRequest,
+                            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt != null && !jwt.getSubject().equals(messageSaveRequest.getSenderId())) {
+            return ResponseEntity.status(403).build();
+        }
         messageSaveRequest.setConversationId(conversationId);
         this.messageService.saveMessage(messageSaveRequest);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping

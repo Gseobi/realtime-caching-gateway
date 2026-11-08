@@ -17,3 +17,5 @@
 | 수정 후 동일 테스트 | 12 | 0 | 0 | 0 |
 | Redis 전체 + bootJar | 45 | 0 | 0 | 0 |
 | Valkey 전체 + bootJar | 45 | 0 | 0 | 0 |
+
+인증의 첫 연결 단위는 [단일 테넌트 JWT 모드](gateway-jwt-tenant-auth.md)에 기록했다. DB와 캐시를 공유하는 다중 테넌트 격리는 별도 구현이 필요하다.
