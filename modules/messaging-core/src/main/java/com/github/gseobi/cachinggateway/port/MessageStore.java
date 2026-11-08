@@ -13,4 +13,8 @@ public interface MessageStore {
     List<String> findMessageIds(StorageTenant tenant, String conversationId, LocalDateTime before, LocalDateTime after, Integer limit);
     void insertMessage(StorageTenant tenant, MessageCacheData message);
     void upsertConversationState(StorageTenant tenant, String conversationId, String messageId, String preview, String senderId, LocalDateTime sentAt);
+    boolean claimRetry(StorageTenant tenant, String key, String fingerprint);
+    String retryFingerprint(StorageTenant tenant, String key);
+    List<MessageCacheData> findHistory(StorageTenant tenant, String conversationId,
+                                       LocalDateTime sentAt, String messageId, int limit);
 }

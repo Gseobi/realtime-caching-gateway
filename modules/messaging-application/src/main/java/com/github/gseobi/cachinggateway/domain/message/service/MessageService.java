@@ -16,6 +16,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -32,6 +37,13 @@ public class MessageService {
     private final MessagePersistenceService persistence;
 
     public void saveMessage(StorageTenant tenant, MessageSaveRequest messageSaveRequest) {
+        saveMessage(tenant, messageSaveRequest, null);
+    }
+
+    public void saveMessage(StorageTenant tenant, MessageSaveRequest messageSaveRequest, String retryKey) {
+        if (retryKey != null && !retryKey.matches("[A-Za-z0-9._~-]{1,128}")) {
+            throw new IllegalArgumentException("Invalid Idempotency-Key");
+        }
         LocalDateTime sentAt = messageSaveRequest.getSentAt() == null ? LocalDateTime.now() : messageSaveRequest.getSentAt();
 
         MessageCacheData message = MessageCacheData.builder()
@@ -44,7 +56,9 @@ public class MessageService {
                 .sentAt(sentAt)
                 .build();
 
-        persistence.persist(tenant, message, preview(message.getContent(), message.getMessageType().name()));
+        String fingerprint = retryKey == null ? null : fingerprint(messageSaveRequest);
+        if (!persistence.persist(tenant, message, preview(message.getContent(), message.getMessageType().name()),
+                retryKey, fingerprint)) return;
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             projectCommittedMessage(tenant, message);
         } else if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -137,5 +151,26 @@ public class MessageService {
             return content.length() > 30 ? content.substring(0, 30) : content;
         }
         return "[" + type + "]";
+    }
+    public List<MessageResponse> getHistory(StorageTenant tenant, String conversationId, LocalDateTime sentAt,
+                                            String messageId, int limit) {
+        return messageStore.findHistory(tenant, conversationId, sentAt, messageId, limit)
+                .stream().map(this::toResponse).toList();
+    }
+
+    private static String fingerprint(MessageSaveRequest request) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            for (String field : new String[]{"v1", request.getConversationId(), request.getMessageId(),
+                    request.getSenderId(), request.getMessageType().name(), request.getContent(),
+                    request.getMetadataJson(), request.getSentAt() == null ? null : request.getSentAt().toString()}) {
+                byte[] bytes = field == null ? null : field.getBytes(StandardCharsets.UTF_8);
+                digest.update(ByteBuffer.allocate(4).putInt(bytes == null ? -1 : bytes.length).array());
+                if (bytes != null) digest.update(bytes);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

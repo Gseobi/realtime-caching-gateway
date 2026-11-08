@@ -29,4 +29,8 @@ public interface MessageMapper {
                                  @Param("lastMessagePreview") String lastMessagePreview,
                                  @Param("lastSenderId") String lastSenderId,
                                  @Param("lastSentAt") LocalDateTime lastSentAt);
+    int claimRetry(@Param("tenantId") String tenantId, @Param("key") String key, @Param("fingerprint") String fingerprint);
+    String retryFingerprint(@Param("tenantId") String tenantId, @Param("key") String key);
+    List<MessageCacheData> findHistory(@Param("tenantId") String tenantId, @Param("conversationId") String conversationId,
+            @Param("sentAt") LocalDateTime sentAt, @Param("messageId") String messageId, @Param("limit") int limit);
 }

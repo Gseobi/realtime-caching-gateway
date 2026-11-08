@@ -108,5 +108,25 @@
               > (conversation_state.last_sent_at, conversation_state.last_message_id)
     </insert>
 
+    <insert id="claimRetry">
+        INSERT INTO message_retry (tenant_id, retry_key, fingerprint)
+        VALUES (#{tenantId}, #{key}, #{fingerprint})
+        ON CONFLICT (tenant_id, retry_key) DO NOTHING
+    </insert>
+
+    <select id="retryFingerprint" resultType="string">
+        SELECT fingerprint FROM message_retry WHERE tenant_id = #{tenantId} AND retry_key = #{key}
+    </select>
+
+    <select id="findHistory" resultMap="messageResultMap">
+        SELECT message_id, conversation_id, sender_id, message_type, content, metadata_json, sent_at
+        FROM message
+        WHERE tenant_id = #{tenantId} AND conversation_id = #{conversationId}
+        <if test="sentAt != null">
+            AND (sent_at, message_id) &lt; (#{sentAt}, #{messageId})
+        </if>
+        ORDER BY sent_at DESC, message_id DESC
+        LIMIT #{limit}
+    </select>
 </mapper>
 

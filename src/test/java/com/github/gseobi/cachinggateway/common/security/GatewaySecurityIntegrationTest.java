@@ -137,6 +137,49 @@ class GatewaySecurityIntegrationTest {
                 .content(template.formatted(id, "duplicate"))).andExpect(status().isConflict());
     }
 
+    @Test
+    void idempotentReplayUsesSameReceiptAndRejectsPayloadChange() throws Exception {
+        String path = messages(UUID.randomUUID().toString());
+        String key = UUID.randomUUID().toString();
+        String original = payload("alice");
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post(path).header("Authorization", tenantToken("team-a"))
+                    .header("Idempotency-Key", key).contentType("application/json").content(original))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(post(path).header("Authorization", tenantToken("team-a"))
+                .header("Idempotency-Key", key).contentType("application/json").content(payload("alice")))
+                .andExpect(status().isConflict());
+        mvc.perform(post(path).header("Authorization", tenantToken("team-b"))
+                .header("Idempotency-Key", key).contentType("application/json").content(original))
+                .andExpect(status().isOk());
+        mvc.perform(get(path).header("Authorization", tenantToken("team-a")))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void historyTraversesTiedTimestampsAndRejectsForeignCursor() throws Exception {
+        String path = messages(UUID.randomUUID().toString());
+        String a = tenantToken("team-a");
+        for (String id : new String[]{"a", "b", "c"}) {
+            mvc.perform(post(path).header("Authorization", a).contentType("application/json").content("""
+                    {"messageId":"%s","senderId":"alice","messageType":"TEXT","sentAt":"2026-01-01T10:00:00"}
+                    """.formatted(id + path.split("/")[4]))).andExpect(status().isOk());
+        }
+        String history = path + "/history";
+        String json = mvc.perform(get(history).param("limit", "2").header("Authorization", a))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(2))
+                .andReturn().getResponse().getContentAsString();
+        var first = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        String cursor = first.get("nextCursor").asText();
+        mvc.perform(get(history).param("cursor", cursor).header("Authorization", a))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.messages.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].messageId").value("a" + path.split("/")[4]));
+        mvc.perform(get(history).param("cursor", cursor).header("Authorization", tenantToken("team-b")))
+                .andExpect(status().isBadRequest());
+    }
+
     private static String tenantToken(String tenant) throws Exception {
         return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300),
                 "messages.read messages.write");

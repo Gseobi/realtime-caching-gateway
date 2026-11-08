@@ -31,4 +31,19 @@ public class MyBatisMessageStore implements MessageStore {
     public void upsertConversationState(StorageTenant tenant, String id, String messageId, String preview, String senderId, LocalDateTime sentAt) {
         mapper.upsertConversationState(tenant.id(), id, messageId, preview, senderId, sentAt);
     }
+    @Override
+    public boolean claimRetry(StorageTenant tenant, String key, String fingerprint) {
+        return mapper.claimRetry(tenant.id(), key, fingerprint) == 1;
+    }
+
+    @Override
+    public String retryFingerprint(StorageTenant tenant, String key) {
+        return mapper.retryFingerprint(tenant.id(), key);
+    }
+
+    @Override
+    public List<MessageCacheData> findHistory(StorageTenant tenant, String conversationId,
+                                              LocalDateTime sentAt, String messageId, int limit) {
+        return mapper.findHistory(tenant.id(), conversationId, sentAt, messageId, limit);
+    }
 }

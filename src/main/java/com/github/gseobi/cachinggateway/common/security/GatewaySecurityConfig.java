@@ -50,7 +50,7 @@ public class GatewaySecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/v1/api/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, MESSAGES, META).hasAuthority("SCOPE_messages.read")
+                        .requestMatchers(HttpMethod.GET, MESSAGES, MESSAGES + "/history", META).hasAuthority("SCOPE_messages.read")
                         .requestMatchers(HttpMethod.POST, MESSAGES).hasAuthority("SCOPE_messages.write")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder.getObject())))

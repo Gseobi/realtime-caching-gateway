@@ -60,6 +60,13 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(com.github.gseobi.cachinggateway.domain.message.service.IdempotencyConflictException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyConflict(RuntimeException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.builder()
+            .timestamp(LocalDateTime.now()).status(409).error("CONFLICT")
+            .message(ex.getMessage()).path(request.getRequestURI()).build());
+    }
+
     @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(Exception ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.builder()
