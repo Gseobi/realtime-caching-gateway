@@ -23,6 +23,7 @@ repositories {
 
 dependencies {
     implementation project(':messaging-application')
+    implementation project(':crm-core')
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

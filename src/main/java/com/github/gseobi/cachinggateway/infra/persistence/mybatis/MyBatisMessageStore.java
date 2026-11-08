@@ -1,6 +1,12 @@
 package com.github.gseobi.cachinggateway.infra.persistence.mybatis;
 
 import com.github.gseobi.cachinggateway.StorageTenant;
+import com.github.gseobi.crm.contract.OutboxEvent;
+import com.github.gseobi.crm.contract.OutboxPort;
+import com.github.gseobi.foundation.identity.RequestContext;
+import com.github.gseobi.foundation.identity.TenantId;
+import java.time.Instant;
+import java.util.UUID;
 
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 import com.github.gseobi.cachinggateway.port.MessageStore;
@@ -13,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MyBatisMessageStore implements MessageStore {
     private final MessageMapper mapper;
+    private final OutboxPort outbox;
 
     @Override
     public List<MessageCacheData> findMessages(StorageTenant tenant, String id, LocalDateTime before, LocalDateTime after, Integer limit) {
@@ -25,7 +32,16 @@ public class MyBatisMessageStore implements MessageStore {
     }
 
     @Override
-    public void insertMessage(StorageTenant tenant, MessageCacheData message) { mapper.insertMessage(tenant.id(), message); }
+    public void insertMessage(StorageTenant tenant, MessageCacheData message) {
+        mapper.insertMessage(tenant.id(), message);
+        if (!tenant.id().isEmpty()) {
+            var tenantId = new TenantId(tenant.id());
+            var eventId = UUID.randomUUID();
+            outbox.append(new RequestContext(tenantId, "message-store", eventId.toString()),
+                    new OutboxEvent(eventId, tenantId, message.getMessageId(), 1,
+                            "message.created", 1, Instant.now(), "{}"));
+        }
+    }
 
     @Override
     public void upsertConversationState(StorageTenant tenant, String id, String messageId, String preview, String senderId, LocalDateTime sentAt) {

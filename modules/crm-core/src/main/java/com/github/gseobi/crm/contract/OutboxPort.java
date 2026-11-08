@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Unimplemented durable adapter contract. No Pub/Sub implementation can satisfy this port. */
+/** Durable adapter contract. No Pub/Sub implementation can satisfy this port. */
 public interface OutboxPort {
     /** Must join the business mutation's transaction; reject a call without that transaction. */
     void append(RequestContext context, OutboxEvent event);
