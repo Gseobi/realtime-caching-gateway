@@ -1,6 +1,11 @@
 package com.github.gseobi.cachinggateway.common.security;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+import com.github.gseobi.cachinggateway.infra.redis.key.RedisKeyPolicy;
 import com.nimbusds.jose.JWSAlgorithm;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
+import static org.assertj.core.api.Assertions.assertThat;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -30,7 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "gateway.auth.enabled=true", "gateway.auth.issuer=https://issuer.example.test",
         "gateway.auth.jwk-set-uri=https://issuer.example.test/jwks",
-        "gateway.auth.audience=gateway", "gateway.auth.tenant-id=team-a"
+        "gateway.auth.audience=gateway", "gateway.auth.tenant-id=team-a",
+        "gateway.auth.shared-storage=true", "gateway.auth.allowed-tenants=team-a,team-b"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -38,6 +44,8 @@ class GatewaySecurityIntegrationTest {
     private static final String ISSUER = "https://issuer.example.test";
     private static final RSAKey SIGNING_KEY = generateKey();
     @Autowired MockMvc mvc;
+    @Autowired StringRedisTemplate redis;
+    @Autowired JdbcTemplate jdbc;
 
     @Test
     void missingTokenCannotReadOrWriteButHealthIsPublic() throws Exception {
@@ -57,7 +65,7 @@ class GatewaySecurityIntegrationTest {
                 sign(SIGNING_KEY, ISSUER, "another-api", "team-a", now.plusSeconds(300)),
                 sign(SIGNING_KEY, ISSUER, "gateway", "team-a", now.minusSeconds(300)),
                 sign(SIGNING_KEY, ISSUER, "gateway", "team-a", null),
-                sign(SIGNING_KEY, ISSUER, "gateway", "team-b", now.plusSeconds(300))
+                sign(SIGNING_KEY, ISSUER, "gateway", "team-c", now.plusSeconds(300))
         }) {
             mvc.perform(get(messages("invalid-token")).header("Authorization", "Bearer " + token)
                     .header("X-Tenant-Id", "team-a")).andExpect(status().isUnauthorized());
@@ -88,6 +96,50 @@ class GatewaySecurityIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].senderId").value("alice"));
         mvc.perform(get("/v1/api/conversations/" + conversation + "/meta")
                 .header("Authorization", token("messages.read"))).andExpect(status().isOk());
+    }
+
+    @Test
+    void sharedStorageIsolatesIdenticalMessageAndConversationIds() throws Exception {
+        String conversation = UUID.randomUUID().toString();
+        String id = UUID.randomUUID().toString();
+        String path = messages(conversation);
+        String meta = "/v1/api/conversations/" + conversation + "/meta";
+        String a = tenantToken("team-a");
+        String b = tenantToken("team-b");
+        String template = """
+                {"messageId":"%s","senderId":"alice","messageType":"TEXT","content":"%s"}
+                """;
+        jdbc.update("""
+                INSERT INTO message (message_id, conversation_id, sender_id, message_type, content, sent_at)
+                VALUES (?, ?, 'legacy', 'TEXT', 'legacy-only', CURRENT_TIMESTAMP)
+                """, id, conversation);
+        mvc.perform(post(path).header("Authorization", a).contentType("application/json")
+                .content(template.formatted(id, "only-a"))).andExpect(status().isOk());
+        mvc.perform(get(path).header("Authorization", b).header("X-Tenant-Id", "team-a"))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get(meta).header("Authorization", b)).andExpect(status().isNotFound());
+        mvc.perform(post(path).header("Authorization", b).contentType("application/json")
+                .content(template.formatted(id, "only-b"))).andExpect(status().isOk());
+        mvc.perform(get(path).header("Authorization", a)).andExpect(jsonPath("$[0].content").value("only-a"));
+        mvc.perform(get(path).header("Authorization", b)).andExpect(jsonPath("$[0].content").value("only-b"));
+        String aKey = RedisKeyPolicy.message(new StorageTenant("team-a"), id);
+        String bKey = RedisKeyPolicy.message(new StorageTenant("team-b"), id);
+        assertThat(redis.opsForHash().get(aKey, "content")).isEqualTo("only-a");
+        assertThat(redis.opsForHash().get(bKey, "content")).isEqualTo("only-b");
+        assertThat(redis.delete(aKey)).isTrue();
+        mvc.perform(get(path).header("Authorization", a)).andExpect(jsonPath("$[0].content").value("only-a"));
+        assertThat(redis.opsForHash().get(bKey, "content")).isEqualTo("only-b");
+        assertThat(jdbc.queryForObject("SELECT content FROM message WHERE tenant_id = '' AND message_id = ?",
+                String.class, id)).isEqualTo("legacy-only");
+        mvc.perform(get(meta).header("Authorization", a)).andExpect(jsonPath("$.lastMessagePreview").value("only-a"));
+        mvc.perform(get(meta).header("Authorization", b)).andExpect(jsonPath("$.lastMessagePreview").value("only-b"));
+        mvc.perform(post(path).header("Authorization", b).contentType("application/json")
+                .content(template.formatted(id, "duplicate"))).andExpect(status().isConflict());
+    }
+
+    private static String tenantToken(String tenant) throws Exception {
+        return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300),
+                "messages.read messages.write");
     }
 
     private static String payload(String sender) {
@@ -133,7 +185,7 @@ class GatewaySecurityIntegrationTest {
         @Primary
         JwtDecoder signedTestJwtDecoder() throws Exception {
             var decoder = NimbusJwtDecoder.withPublicKey(SIGNING_KEY.toRSAPublicKey()).build();
-            decoder.setJwtValidator(GatewaySecurityConfig.validators(ISSUER, "gateway", "team-a"));
+            decoder.setJwtValidator(GatewaySecurityConfig.validators(ISSUER, "gateway", java.util.Set.of("team-a", "team-b")));
             return decoder;
         }
     }

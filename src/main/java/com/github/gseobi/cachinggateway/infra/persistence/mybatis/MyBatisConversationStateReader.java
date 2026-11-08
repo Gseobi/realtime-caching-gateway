@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.infra.persistence.mybatis;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
 import com.github.gseobi.cachinggateway.port.ConversationStateReader;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +13,7 @@ public class MyBatisConversationStateReader implements ConversationStateReader {
     private final ConversationStateMapper mapper;
 
     @Override
-    public ConversationMetaCacheData findConversationMeta(String conversationId) {
-        return mapper.findConversationMeta(conversationId);
+    public ConversationMetaCacheData findConversationMeta(StorageTenant tenant, String conversationId) {
+        return mapper.findConversationMeta(tenant.id(), conversationId);
     }
 }

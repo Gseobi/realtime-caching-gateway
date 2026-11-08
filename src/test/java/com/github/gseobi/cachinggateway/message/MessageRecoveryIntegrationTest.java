@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.message;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageType;
 import com.github.gseobi.cachinggateway.infra.persistence.mybatis.ConversationStateMapper;
@@ -132,7 +134,7 @@ class MessageRecoveryIntegrationTest {
         assertThat(redisTemplate.hasKey(conversationMetaKey(conversationId))).isTrue();
         assertThat(redisTemplate.opsForHash().entries(conversationMetaKey(conversationId))).isNotEmpty();
 
-        assertThat(conversationStateMapper.findConversationMeta(conversationId)).isNotNull();
+        assertThat(conversationStateMapper.findConversationMeta("", conversationId)).isNotNull();
     }
 
 
@@ -145,7 +147,7 @@ class MessageRecoveryIntegrationTest {
         var r = new com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest();
         r.setMessageId(id); r.setConversationId(conversationId); r.setSenderId("user");
         r.setMessageType(MessageType.TEXT); r.setContent("survives eviction");
-        messageService.saveMessage(r);
+        messageService.saveMessage(StorageTenant.LEGACY, r);
         clearRedisKeys(conversationId, List.of(id));
         mockMvc.perform(get("/v1/api/conversations/{conversationId}/messages", conversationId))
             .andExpect(status().isOk())
@@ -189,7 +191,7 @@ class MessageRecoveryIntegrationTest {
                 "/v1/api/conversations/{conversationId}/messages", conversationId)
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body.replace("original", "changed")))
             .andExpect(status().isConflict());
-        assertThat(messageMapper.findMessages(conversationId, null, null, 50))
+        assertThat(messageMapper.findMessages("", conversationId, null, null, 50))
             .extracting("content").containsExactly("original");
     }
 
@@ -227,7 +229,7 @@ class MessageRecoveryIntegrationTest {
                         .build()
         );
 
-        messageMapper.upsertMessages(messages);
+        messageMapper.upsertMessages("", messages);
         return messages;
     }
 
@@ -236,7 +238,7 @@ class MessageRecoveryIntegrationTest {
                 ? latestMessage.getContent()
                 : latestMessage.getMessageType().name();
 
-        messageMapper.upsertConversationState(
+        messageMapper.upsertConversationState("",
                 conversationId,
                 latestMessage.getMessageId(),
                 preview,

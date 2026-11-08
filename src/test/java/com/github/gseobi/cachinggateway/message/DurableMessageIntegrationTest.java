@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.message;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageType;
 import com.github.gseobi.cachinggateway.domain.message.service.MessageService;
@@ -38,26 +40,26 @@ class DurableMessageIntegrationTest {
     @Test void externalCommitProjectsOnlyAfterCommit() {
         var request = request();
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            service.saveMessage(request);
+            service.saveMessage(StorageTenant.LEGACY, request);
             verifyNoInteractions(cache, publisher);
         });
-        verify(cache).saveMessage(argThat(message -> request.getMessageId().equals(message.getMessageId())));
-        verify(publisher).publish(argThat(message -> request.getMessageId().equals(message.getMessageId())));
-        assertThat(mapper.findMessages(request.getConversationId(), null, null, 50)).hasSize(1);
+        verify(cache).saveMessage(eq(StorageTenant.LEGACY), argThat(message -> request.getMessageId().equals(message.getMessageId())));
+        verify(publisher).publish(eq(StorageTenant.LEGACY), argThat(message -> request.getMessageId().equals(message.getMessageId())));
+        assertThat(mapper.findMessages("", request.getConversationId(), null, null, 50)).hasSize(1);
     }
 
     @Test void externalRollbackDoesNotWarmCacheEvenAfterReadingOwnWrites() {
         var request = request();
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            service.saveMessage(request);
-            assertThat(service.getMessages(request.getConversationId(), new MessageQueryRequest()))
+            service.saveMessage(StorageTenant.LEGACY, request);
+            assertThat(service.getMessages(StorageTenant.LEGACY, request.getConversationId(), new MessageQueryRequest()))
                     .extracting("messageId").containsExactly(request.getMessageId());
-            assertThat(conversations.getConversationMeta(request.getConversationId()).getLastMessageId())
+            assertThat(conversations.getConversationMeta(StorageTenant.LEGACY, request.getConversationId()).getLastMessageId())
                     .isEqualTo(request.getMessageId());
             status.setRollbackOnly();
         });
-        assertThat(mapper.findMessages(request.getConversationId(), null, null, 50)).isEmpty();
-        assertThat(stateMapper.findConversationMeta(request.getConversationId())).isNull();
+        assertThat(mapper.findMessages("", request.getConversationId(), null, null, 50)).isEmpty();
+        assertThat(stateMapper.findConversationMeta("", request.getConversationId())).isNull();
         verifyNoInteractions(cache, publisher);
     }
 
@@ -67,16 +69,16 @@ class DurableMessageIntegrationTest {
         var nested = new TransactionTemplate(transactionManager);
         nested.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            service.saveMessage(kept);
+            service.saveMessage(StorageTenant.LEGACY, kept);
             nested.executeWithoutResult(inner -> {
-                service.saveMessage(discarded);
+                service.saveMessage(StorageTenant.LEGACY, discarded);
                 inner.setRollbackOnly();
             });
         });
-        assertThat(mapper.findMessages(discarded.getConversationId(), null, null, 50)).isEmpty();
-        assertThat(mapper.findMessages(kept.getConversationId(), null, null, 50)).hasSize(1);
-        verify(cache).saveMessage(argThat(message -> kept.getMessageId().equals(message.getMessageId())));
-        verify(publisher).publish(argThat(message -> kept.getMessageId().equals(message.getMessageId())));
+        assertThat(mapper.findMessages("", discarded.getConversationId(), null, null, 50)).isEmpty();
+        assertThat(mapper.findMessages("", kept.getConversationId(), null, null, 50)).hasSize(1);
+        verify(cache).saveMessage(eq(StorageTenant.LEGACY), argThat(message -> kept.getMessageId().equals(message.getMessageId())));
+        verify(publisher).publish(eq(StorageTenant.LEGACY), argThat(message -> kept.getMessageId().equals(message.getMessageId())));
         verifyNoMoreInteractions(cache, publisher);
     }
 
@@ -91,65 +93,65 @@ class DurableMessageIntegrationTest {
 
     @Test void acknowledgedMessageSurvivesCompleteCacheLoss() {
         MessageSaveRequest r = request();
-        service.saveMessage(r);
+        service.saveMessage(StorageTenant.LEGACY, r);
         // Cache mock retains nothing: unlike the old fixture, no pre-seeding of DB.
-        assertThat(mapper.findMessages(r.getConversationId(), null, null, 50))
+        assertThat(mapper.findMessages("", r.getConversationId(), null, null, 50))
             .extracting("messageId").containsExactly(r.getMessageId());
-        assertThat(stateMapper.findConversationMeta(r.getConversationId()).getLastMessageId())
+        assertThat(stateMapper.findConversationMeta("", r.getConversationId()).getLastMessageId())
             .isEqualTo(r.getMessageId());
     }
 
     @Test void cacheWriteFailureDoesNotTurnCommittedMessageIntoFailedRequest() {
         MessageSaveRequest r = request();
-        doThrow(new IllegalStateException("cache unavailable")).when(cache).saveMessage(any());
-        assertThatCode(() -> service.saveMessage(r)).doesNotThrowAnyException();
-        assertThat(mapper.findMessages(r.getConversationId(), null, null, 50)).hasSize(1);
+        doThrow(new IllegalStateException("cache unavailable")).when(cache).saveMessage(eq(StorageTenant.LEGACY), any());
+        assertThatCode(() -> service.saveMessage(StorageTenant.LEGACY, r)).doesNotThrowAnyException();
+        assertThat(mapper.findMessages("", r.getConversationId(), null, null, 50)).hasSize(1);
     }
 
     @Test void publicationFailureDoesNotUndoDurableWrite() {
         MessageSaveRequest r = request();
-        doThrow(new IllegalStateException("pubsub unavailable")).when(publisher).publish(any());
-        assertThatCode(() -> service.saveMessage(r)).doesNotThrowAnyException();
-        assertThat(mapper.findMessages(r.getConversationId(), null, null, 50)).hasSize(1);
+        doThrow(new IllegalStateException("pubsub unavailable")).when(publisher).publish(eq(StorageTenant.LEGACY), any());
+        assertThatCode(() -> service.saveMessage(StorageTenant.LEGACY, r)).doesNotThrowAnyException();
+        assertThat(mapper.findMessages("", r.getConversationId(), null, null, 50)).hasSize(1);
     }
 
     @Test void stateWriteFailureRollsBackMessageAndNeverPublishes() {
         MessageSaveRequest r = request();
         doThrow(new IllegalStateException("state unavailable")).when(mapper)
-            .upsertConversationState(anyString(), anyString(), anyString(), anyString(), any());
-        assertThatThrownBy(() -> service.saveMessage(r)).isInstanceOf(IllegalStateException.class);
-        assertThat(mapper.findMessages(r.getConversationId(), null, null, 50)).isEmpty();
+            .upsertConversationState(anyString(), anyString(), anyString(), anyString(), anyString(), any());
+        assertThatThrownBy(() -> service.saveMessage(StorageTenant.LEGACY, r)).isInstanceOf(IllegalStateException.class);
+        assertThat(mapper.findMessages("", r.getConversationId(), null, null, 50)).isEmpty();
         verifyNoInteractions(cache, publisher);
     }
 
     @Test void missingTimestampIsNormalizedBeforePersistenceAndCaching() {
         MessageSaveRequest r = request(); r.setSentAt(null);
-        service.saveMessage(r);
-        assertThat(mapper.findMessages(r.getConversationId(), null, null, 50).getFirst().getSentAt())
+        service.saveMessage(StorageTenant.LEGACY, r);
+        assertThat(mapper.findMessages("", r.getConversationId(), null, null, 50).getFirst().getSentAt())
             .isNotNull();
-        verify(cache).saveMessage(argThat(m -> m.getSentAt() != null));
+        verify(cache).saveMessage(eq(StorageTenant.LEGACY), argThat(m -> m.getSentAt() != null));
     }
 
     @Test void lateArrivalCannotMoveConversationStateBackwards() {
-        MessageSaveRequest newer = request(); service.saveMessage(newer);
+        MessageSaveRequest newer = request(); service.saveMessage(StorageTenant.LEGACY, newer);
         MessageSaveRequest older = request(); older.setConversationId(newer.getConversationId());
-        older.setSentAt(newer.getSentAt().minusMinutes(1)); service.saveMessage(older);
-        assertThat(stateMapper.findConversationMeta(newer.getConversationId()).getLastMessageId())
+        older.setSentAt(newer.getSentAt().minusMinutes(1)); service.saveMessage(StorageTenant.LEGACY, older);
+        assertThat(stateMapper.findConversationMeta("", newer.getConversationId()).getLastMessageId())
             .isEqualTo(newer.getMessageId());
     }
     @Test void cacheReadAndRefreshFailureStillReturnsDurableMessages() {
-        MessageSaveRequest r = request(); service.saveMessage(r);
-        doThrow(new IllegalStateException("cache unavailable")).when(cache).findMessagesByIds(anyList());
-        doThrow(new IllegalStateException("cache unavailable")).when(cache).refreshMessages(anyString(), anyList());
-        assertThat(service.getMessages(r.getConversationId(),
+        MessageSaveRequest r = request(); service.saveMessage(StorageTenant.LEGACY, r);
+        doThrow(new IllegalStateException("cache unavailable")).when(cache).findMessagesByIds(eq(StorageTenant.LEGACY), anyList());
+        doThrow(new IllegalStateException("cache unavailable")).when(cache).refreshMessages(eq(StorageTenant.LEGACY), anyString(), anyList());
+        assertThat(service.getMessages(StorageTenant.LEGACY, r.getConversationId(),
             new com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest()))
             .extracting("messageId").containsExactly(r.getMessageId());
     }
 
     @Test void databaseInsertFailureNeverWritesCacheOrPublishes() {
         MessageSaveRequest r = request();
-        doThrow(new IllegalStateException("DB unavailable")).when(mapper).insertMessage(any());
-        assertThatThrownBy(() -> service.saveMessage(r)).isInstanceOf(IllegalStateException.class);
+        doThrow(new IllegalStateException("DB unavailable")).when(mapper).insertMessage(anyString(), any());
+        assertThatThrownBy(() -> service.saveMessage(StorageTenant.LEGACY, r)).isInstanceOf(IllegalStateException.class);
         verifyNoInteractions(cache, publisher);
     }
 
@@ -159,13 +161,13 @@ class DurableMessageIntegrationTest {
         older.setSentAt(newer.getSentAt().minusMinutes(1));
         java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
         try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
-            var a = pool.submit(() -> { start.await(); service.saveMessage(newer); return null; });
-            var z = pool.submit(() -> { start.await(); service.saveMessage(older); return null; });
+            var a = pool.submit(() -> { start.await(); service.saveMessage(StorageTenant.LEGACY, newer); return null; });
+            var z = pool.submit(() -> { start.await(); service.saveMessage(StorageTenant.LEGACY, older); return null; });
             start.countDown(); a.get(10, java.util.concurrent.TimeUnit.SECONDS);
             z.get(10, java.util.concurrent.TimeUnit.SECONDS);
         }
-        assertThat(mapper.findMessages(newer.getConversationId(), null, null, 50)).hasSize(2);
-        assertThat(stateMapper.findConversationMeta(newer.getConversationId()).getLastMessageId())
+        assertThat(mapper.findMessages("", newer.getConversationId(), null, null, 50)).hasSize(2);
+        assertThat(stateMapper.findConversationMeta("", newer.getConversationId()).getLastMessageId())
             .isEqualTo(newer.getMessageId());
     }
 

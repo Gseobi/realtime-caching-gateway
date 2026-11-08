@@ -37,6 +37,7 @@ Java 21과 Docker Compose가 필요합니다. 아래 계정은 local demo용입�
 docker compose up -d
 # 최초 및 기존 DB index 적용: 동일 SQL은 IF NOT EXISTS로 재실행 가능
 docker compose exec -T postgres psql -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/init_schema_v1.sql
+docker compose exec -T postgres psql -1 -v ON_ERROR_STOP=1 -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/tenant_storage_v2.sql
 ./gradlew test
 ./gradlew bootRun
 ```
@@ -58,3 +59,5 @@ Redis client abstraction은 유지하며 서버를 Valkey로 변경했습니다.
 [초기 작업 완료 점검·모듈 경계·CRM/자체 LLM·RAG 후속 계획](docs/crm-foundation-20261017.md)을 참고하세요. 인증·테넌트 격리와 CRM/AI 제품 기능은 후속 작업입니다.
 
 후속 계약 스켈레톤(`tenant-context`, `crm-core`, `knowledge-core`, `assistant-core`)과 [1차 설계 점검 결과](docs/crm-skeleton-review-20261017.md)도 준비했습니다. 이 모듈들은 실행 앱에 아직 연결하지 않았으며 실제 인증·CRM 저장·LLM/RAG 기능은 제공하지 않습니다.
+
+공유 저장소를 사용하는 경우 [테넌트 격리와 DB 전환 절차](docs/shared-tenant-storage.md)를 확인하세요.

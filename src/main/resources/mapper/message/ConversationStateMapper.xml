@@ -21,7 +21,7 @@
                last_sent_at,
                updated_at
         FROM conversation_state
-        WHERE conversation_id = #{conversationId}
+        WHERE tenant_id = #{tenantId} AND conversation_id = #{conversationId}
     </select>
 
 </mapper>

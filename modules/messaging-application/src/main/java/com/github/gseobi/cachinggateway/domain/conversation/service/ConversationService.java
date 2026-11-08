@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.domain.conversation.service;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.common.exception.ResourceNotFoundException;
 import com.github.gseobi.cachinggateway.domain.conversation.dto.ConversationMetaResponse;
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
@@ -16,13 +18,13 @@ public class ConversationService {
     private final MessageCacheRepository messageCacheRepository;
     private final ConversationStateReader conversationStateReader;
 
-    public ConversationMetaResponse getConversationMeta(String conversationId) {
+    public ConversationMetaResponse getConversationMeta(StorageTenant tenant, String conversationId) {
         // Mutable state always comes from the monotonic DB projection.
-        ConversationMetaCacheData dbMeta = conversationStateReader.findConversationMeta(conversationId);
+        ConversationMetaCacheData dbMeta = conversationStateReader.findConversationMeta(tenant, conversationId);
         if (dbMeta != null) {
             if (!TransactionSynchronizationManager.isActualTransactionActive()) {
                 try {
-                    messageCacheRepository.saveConversationMeta(dbMeta);
+                    messageCacheRepository.saveConversationMeta(tenant, dbMeta);
                 } catch (RuntimeException ex) {
                     // Cache availability does not decide whether durable state is readable.
                 }

@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.infra.redis.repository;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.port.MessageCacheRepository;
 import com.github.gseobi.cachinggateway.domain.conversation.model.ConversationMetaCacheData;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
@@ -27,9 +29,9 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     private long conversationMetaTtlSeconds;
 
     @Override
-    public void saveMessage(MessageCacheData data) {
-        String messageKey = RedisKeyPolicy.message(data.getMessageId());
-        String indexKey = RedisKeyPolicy.conversationMessageIndex(data.getConversationId());
+    public void saveMessage(StorageTenant tenant, MessageCacheData data) {
+        String messageKey = RedisKeyPolicy.message(tenant, data.getMessageId());
+        String indexKey = RedisKeyPolicy.conversationMessageIndex(tenant, data.getConversationId());
 
         Map<String, String> hashData = new HashMap<>();
         hashData.put("messageId", data.getMessageId());
@@ -51,8 +53,8 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     }
 
     @Override
-    public void saveConversationMeta(ConversationMetaCacheData meta) {
-        String key = RedisKeyPolicy.conversationMeta(meta.getConversationId());
+    public void saveConversationMeta(StorageTenant tenant, ConversationMetaCacheData meta) {
+        String key = RedisKeyPolicy.conversationMeta(tenant, meta.getConversationId());
 
         Map<String, String> hashMeta = new HashMap<>();
         hashMeta.put("conversationId", meta.getConversationId());
@@ -67,8 +69,8 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     }
 
     @Override
-    public List<String> findMessageIds(String conversationId, LocalDateTime before, LocalDateTime after, int limit) {
-        String indexKey = RedisKeyPolicy.conversationMessageIndex(conversationId);
+    public List<String> findMessageIds(StorageTenant tenant, String conversationId, LocalDateTime before, LocalDateTime after, int limit) {
+        String indexKey = RedisKeyPolicy.conversationMessageIndex(tenant, conversationId);
 
         Set<String> ids;
         if (before == null && after == null) {
@@ -89,14 +91,14 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     }
 
     @Override
-    public List<MessageCacheData> findMessagesByIds(List<String> messageIds) {
+    public List<MessageCacheData> findMessagesByIds(StorageTenant tenant, List<String> messageIds) {
         if (messageIds == null || messageIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<MessageCacheData> result = new ArrayList<>();
         for (String id : messageIds) {
-            Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.message(id));
+            Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.message(tenant, id));
             if (raw == null || raw.isEmpty()) continue;
             result.add(toMessage(raw));
         }
@@ -104,21 +106,21 @@ public class MessageCacheRedisRepository implements MessageCacheRepository {
     }
 
     @Override
-    public List<MessageCacheData> findMessages(String conversationId, LocalDateTime before, LocalDateTime after, int limit) {
-        List<String> ids = findMessageIds(conversationId, before, after, limit);
-        return findMessagesByIds(ids);
+    public List<MessageCacheData> findMessages(StorageTenant tenant, String conversationId, LocalDateTime before, LocalDateTime after, int limit) {
+        List<String> ids = findMessageIds(tenant, conversationId, before, after, limit);
+        return findMessagesByIds(tenant, ids);
     }
 
     @Override
-    public void refreshMessages(String conversationId, List<MessageCacheData> messages) {
+    public void refreshMessages(StorageTenant tenant, String conversationId, List<MessageCacheData> messages) {
         for (MessageCacheData message : messages) {
-            saveMessage(message);
+            saveMessage(tenant, message);
         }
     }
 
     @Override
-    public ConversationMetaCacheData findConversationMeta(String conversationId) {
-        Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.conversationMeta(conversationId));
+    public ConversationMetaCacheData findConversationMeta(StorageTenant tenant, String conversationId) {
+        Map<Object, Object> raw = this.redisTemplate.opsForHash().entries(RedisKeyPolicy.conversationMeta(tenant, conversationId));
         if (raw == null || raw.isEmpty()) return null;
 
         return ConversationMetaCacheData.builder()

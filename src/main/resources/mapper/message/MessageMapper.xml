@@ -23,7 +23,7 @@
             metadata_json,
             sent_at
         FROM message
-        WHERE conversation_id = #{conversationId}
+        WHERE tenant_id = #{tenantId} AND conversation_id = #{conversationId}
         <if test="before != null">
             AND sent_at &lt; #{before}
         </if>
@@ -35,22 +35,22 @@
     </select>
 
     <select id="findMessageIds" resultType="string">
-        SELECT message_id FROM message WHERE conversation_id = #{conversationId}
+        SELECT message_id FROM message WHERE tenant_id = #{tenantId} AND conversation_id = #{conversationId}
         <if test="before != null">AND sent_at &lt; #{before}</if>
         <if test="after != null">AND sent_at &gt; #{after}</if>
         ORDER BY sent_at DESC, message_id DESC LIMIT #{limit}
     </select>
 
     <insert id="insertMessage">
-        INSERT INTO message (message_id, conversation_id, sender_id, message_type,
+        INSERT INTO message (tenant_id, message_id, conversation_id, sender_id, message_type,
             content, metadata_json, sent_at)
-        VALUES (#{m.messageId}, #{m.conversationId}, #{m.senderId}, #{m.messageType},
+        VALUES (#{tenantId}, #{m.messageId}, #{m.conversationId}, #{m.senderId}, #{m.messageType},
             #{m.content}, #{m.metadataJson}, #{m.sentAt})
     </insert>
 
     <insert id="upsertMessages">
         INSERT INTO message (
-            message_id,
+            tenant_id, message_id,
             conversation_id,
             sender_id,
             message_type,
@@ -62,7 +62,7 @@
         VALUES
         <foreach collection="messages" item="m" separator=",">
         (
-            #{m.messageId},
+            #{tenantId}, #{m.messageId},
             #{m.conversationId},
             #{m.senderId},
             #{m.messageType},
@@ -72,7 +72,7 @@
             CURRENT_TIMESTAMP
         )
         </foreach>
-        ON CONFLICT (message_id)
+        ON CONFLICT (tenant_id, message_id)
         DO UPDATE SET
         content = EXCLUDED.content,
         metadata_json = EXCLUDED.metadata_json,
@@ -81,7 +81,7 @@
 
     <insert id="upsertConversationState">
         INSERT INTO conversation_state (
-            conversation_id,
+            tenant_id, conversation_id,
             last_message_id,
             last_message_preview,
             last_sender_id,
@@ -89,14 +89,14 @@
             updated_at
         )
         VALUES (
-            #{conversationId},
+            #{tenantId}, #{conversationId},
             #{lastMessageId},
             #{lastMessagePreview},
             #{lastSenderId},
             #{lastSentAt},
             CURRENT_TIMESTAMP
         )
-        ON CONFLICT (conversation_id)
+        ON CONFLICT (tenant_id, conversation_id)
         DO UPDATE SET
         last_message_id = EXCLUDED.last_message_id,
         last_message_preview = EXCLUDED.last_message_preview,

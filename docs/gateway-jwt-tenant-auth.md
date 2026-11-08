@@ -33,3 +33,5 @@ SPRING_DATA_REDIS_PORT=16380 bash gradlew test bootJar --rerun-tasks
 ```
 
 Redis 검증은 같은 명령에서 포트만 16379로 바꿔 실행했다. 기존 트랜잭션 수정 브랜치 위에 이 인증 변경을 별도 커밋으로 두었다.
+
+별도 선택 사항인 공유 저장소 모드는 [테넌트 격리 문서](shared-tenant-storage.md)를 따른다. 이 문서의 단일 테넌트 배포 설정은 그대로 사용할 수 있다. 두 모드 모두 현재 바이너리로 업그레이드하기 전에 v2 DB 마이그레이션이 필요하다.

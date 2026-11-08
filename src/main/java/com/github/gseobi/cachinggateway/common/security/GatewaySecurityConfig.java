@@ -1,6 +1,11 @@
 package com.github.gseobi.cachinggateway.common.security;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.github.gseobi.cachinggateway.StorageTenant;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +34,11 @@ public class GatewaySecurityConfig {
     @Bean
     SecurityFilterChain gatewaySecurity(HttpSecurity http,
                                        @Value("${gateway.auth.enabled:false}") boolean enabled,
+                                       @Value("${gateway.auth.shared-storage:false}") boolean sharedStorage,
                                        ObjectProvider<JwtDecoder> decoder) throws Exception {
+        if (sharedStorage && !enabled) {
+            throw new IllegalArgumentException("Shared storage requires JWT authentication");
+        }
         if (!enabled) {
             // Preserve the original servlet behavior when auth is explicitly not in use.
             return http.securityMatcher(request -> false).build();
@@ -53,23 +62,30 @@ public class GatewaySecurityConfig {
     JwtDecoder gatewayJwtDecoder(@Value("${gateway.auth.issuer}") String issuer,
                                  @Value("${gateway.auth.jwk-set-uri}") String jwkSetUri,
                                  @Value("${gateway.auth.audience}") String audience,
-                                 @Value("${gateway.auth.tenant-id}") String tenantId) {
+                                 @Value("${gateway.auth.tenant-id:}") String tenantId,
+                                 @Value("${gateway.auth.shared-storage:false}") boolean sharedStorage,
+                                 @Value("${gateway.auth.allowed-tenants:}") String allowedTenants) {
         requireHttps(issuer, "issuer");
         requireHttps(jwkSetUri, "jwk-set-uri");
-        if (audience.isBlank() || tenantId.isBlank()) {
-            throw new IllegalArgumentException("gateway auth requires a nonblank audience and tenant-id");
+        if (audience.isBlank()) {
+            throw new IllegalArgumentException("gateway auth requires a nonblank audience");
         }
         var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        decoder.setJwtValidator(validators(issuer, audience, tenantId));
+        Set<String> tenants = sharedStorage
+                ? Arrays.stream(allowedTenants.split(",", -1)).map(String::trim).collect(Collectors.toUnmodifiableSet())
+                : Set.of(tenantId);
+        if (tenants.stream().anyMatch(String::isBlank)) throw new IllegalArgumentException("A nonblank tenant allowlist is required");
+        if (sharedStorage) tenants.forEach(StorageTenant::new);
+        decoder.setJwtValidator(validators(issuer, audience, tenants));
         return decoder;
     }
 
-    static OAuth2TokenValidator<Jwt> validators(String issuer, String audience, String tenantId) {
+    static OAuth2TokenValidator<Jwt> validators(String issuer, String audience, Set<String> tenants) {
         return new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuer), jwt -> {
             if (jwt.getExpiresAt() != null
                     && jwt.getSubject() != null && !jwt.getSubject().isBlank() && jwt.getSubject().length() <= 64
                     && jwt.getAudience() != null && jwt.getAudience().contains(audience)
-                    && tenantId.equals(jwt.getClaims().get("tenant_id"))) {
+                    && jwt.getClaims().get("tenant_id") instanceof String tenantId && tenants.contains(tenantId)) {
                 return OAuth2TokenValidatorResult.success();
             }
             return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token"));

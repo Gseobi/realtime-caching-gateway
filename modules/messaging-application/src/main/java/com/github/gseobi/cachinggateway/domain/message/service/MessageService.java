@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.domain.message.service;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageQueryRequest;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageResponse;
 import com.github.gseobi.cachinggateway.domain.message.dto.MessageSaveRequest;
@@ -29,7 +31,7 @@ public class MessageService {
     private final MessageEventPublisher messagePublisher;
     private final MessagePersistenceService persistence;
 
-    public void saveMessage(MessageSaveRequest messageSaveRequest) {
+    public void saveMessage(StorageTenant tenant, MessageSaveRequest messageSaveRequest) {
         LocalDateTime sentAt = messageSaveRequest.getSentAt() == null ? LocalDateTime.now() : messageSaveRequest.getSentAt();
 
         MessageCacheData message = MessageCacheData.builder()
@@ -42,9 +44,9 @@ public class MessageService {
                 .sentAt(sentAt)
                 .build();
 
-        persistence.persist(message, preview(message.getContent(), message.getMessageType().name()));
+        persistence.persist(tenant, message, preview(message.getContent(), message.getMessageType().name()));
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
-            projectCommittedMessage(message);
+            projectCommittedMessage(tenant, message);
         } else if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 private final Set<Object> laterSavepoints =
@@ -64,7 +66,7 @@ public class MessageService {
 
                 @Override
                 public void afterCommit() {
-                    if (!discarded) projectCommittedMessage(message);
+                    if (!discarded) projectCommittedMessage(tenant, message);
                 }
             });
         } else {
@@ -72,32 +74,32 @@ public class MessageService {
         }
     }
 
-    private void projectCommittedMessage(MessageCacheData message) {
+    private void projectCommittedMessage(StorageTenant tenant, MessageCacheData message) {
         try {
-            messageCacheRepository.saveMessage(message);
+            messageCacheRepository.saveMessage(tenant, message);
         } catch (RuntimeException ex) {
             log.warn("Cache projection failed after durable commit. messageId={}", message.getMessageId(), ex);
         }
         try {
-            messagePublisher.publish(message);
+            messagePublisher.publish(tenant, message);
         } catch (RuntimeException ex) {
             // Pub/Sub is best effort; clients recover committed messages through GET.
             log.warn("Live publication failed after durable commit. messageId={}", message.getMessageId(), ex);
         }
     }
 
-    public List<MessageResponse> getMessages(String conversationId, MessageQueryRequest query) {
+    public List<MessageResponse> getMessages(StorageTenant tenant, String conversationId, MessageQueryRequest query) {
         int limit = query.getLimit() == null ? 50 : query.getLimit();
         // A transaction can read its own uncommitted writes. Keep its snapshot out of shared cache.
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            return messageStore.findMessages(conversationId, query.getBefore(), query.getAfter(), limit)
+            return messageStore.findMessages(tenant, conversationId, query.getBefore(), query.getAfter(), limit)
                     .stream().map(this::toResponse).toList();
         }
         // The DB owns membership and ordering: a partly warmed index is not a complete page.
-        List<String> ids = messageStore.findMessageIds(conversationId, query.getBefore(), query.getAfter(), limit);
+        List<String> ids = messageStore.findMessageIds(tenant, conversationId, query.getBefore(), query.getAfter(), limit);
         if (ids.isEmpty()) return List.of();
         try {
-            List<MessageCacheData> cached = messageCacheRepository.findMessagesByIds(ids);
+            List<MessageCacheData> cached = messageCacheRepository.findMessagesByIds(tenant, ids);
             if (cached.size() == ids.size()) {
                 java.util.Map<String, MessageCacheData> byId = cached.stream().collect(
                     java.util.stream.Collectors.toMap(MessageCacheData::getMessageId, m -> m));
@@ -109,10 +111,9 @@ public class MessageService {
         } catch (RuntimeException ex) {
             log.warn("Cache read failed; using durable messages. conversationId={}", conversationId, ex);
         }
-        List<MessageCacheData> durable = messageStore.findMessages(
-            conversationId, query.getBefore(), query.getAfter(), limit);
+        List<MessageCacheData> durable = messageStore.findMessages(tenant, conversationId, query.getBefore(), query.getAfter(), limit);
         try {
-            messageCacheRepository.refreshMessages(conversationId, durable);
+            messageCacheRepository.refreshMessages(tenant, conversationId, durable);
         } catch (RuntimeException ex) {
             log.warn("Cache refresh failed. conversationId={}", conversationId, ex);
         }

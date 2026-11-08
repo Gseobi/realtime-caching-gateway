@@ -10,21 +10,21 @@ import java.util.List;
 @Mapper
 public interface MessageMapper {
 
-    List<MessageCacheData> findMessages(@Param("conversationId") String conversationId,
+    List<MessageCacheData> findMessages(@Param("tenantId") String tenantId, @Param("conversationId") String conversationId,
                                        @Param("before") LocalDateTime before,
                                        @Param("after") LocalDateTime after,
                                        @Param("limit") Integer limit);
 
-    void insertMessage(@Param("m") MessageCacheData message);
+    void insertMessage(@Param("tenantId") String tenantId, @Param("m") MessageCacheData message);
 
-    List<String> findMessageIds(@Param("conversationId") String conversationId,
+    List<String> findMessageIds(@Param("tenantId") String tenantId, @Param("conversationId") String conversationId,
                                @Param("before") LocalDateTime before,
                                @Param("after") LocalDateTime after,
                                @Param("limit") Integer limit);
 
-    void upsertMessages(@Param("messages") List<MessageCacheData> messages);
+    void upsertMessages(@Param("tenantId") String tenantId, @Param("messages") List<MessageCacheData> messages);
 
-    void upsertConversationState(@Param("conversationId") String conversationId,
+    void upsertConversationState(@Param("tenantId") String tenantId, @Param("conversationId") String conversationId,
                                  @Param("lastMessageId") String lastMessageId,
                                  @Param("lastMessagePreview") String lastMessagePreview,
                                  @Param("lastSenderId") String lastSenderId,

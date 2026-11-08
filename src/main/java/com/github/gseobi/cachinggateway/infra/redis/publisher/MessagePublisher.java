@@ -1,5 +1,7 @@
 package com.github.gseobi.cachinggateway.infra.redis.publisher;
 
+import com.github.gseobi.cachinggateway.StorageTenant;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.gseobi.cachinggateway.domain.message.model.MessageCacheData;
@@ -17,10 +19,10 @@ public class MessagePublisher implements MessageEventPublisher {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void publish(MessageCacheData data) {
+    public void publish(StorageTenant tenant, MessageCacheData data) {
         try {
             redisTemplate.convertAndSend(
-                    RedisKeyPolicy.pubsubMessageIn(),
+                    RedisKeyPolicy.pubsubMessageIn(tenant),
                     objectMapper.writeValueAsString(data)
             );
         } catch (JsonProcessingException ex) {

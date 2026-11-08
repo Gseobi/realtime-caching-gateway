@@ -7,5 +7,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface ConversationStateMapper {
 
-    ConversationMetaCacheData findConversationMeta(@Param("conversationId") String conversationId);
+    ConversationMetaCacheData findConversationMeta(@Param("tenantId") String tenantId, @Param("conversationId") String conversationId);
 }
