@@ -76,3 +76,5 @@ docker stop codex-modules-http-valkey-20261017
 외부 트랜잭션 경계는 [후속 작업](crm-transaction-boundary-20261108.md)에서 보완했다. 신규 CRM 기능을 기존 서비스에 연결하기 전 tenant 인증·권한과 데이터 격리를 구현하고 검증해야 한다.
 
 [공유 저장소 테넌트 격리 및 완료 기준](shared-tenant-storage.md): 게이트웨이 메시지와 대화 메타의 테넌트 격리를 검증한다. 멱등성과 이력 조회 계약이 다음 구현 단위다.
+
+[현재 설계 달성률 및 완료 증거](crm-progress.md)는 이 문서의 6개 항목을 기준으로 계산한다. 초기 스켈레톤 설명과 이후 구현을 구분한다.

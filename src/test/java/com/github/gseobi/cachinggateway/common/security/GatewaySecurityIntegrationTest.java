@@ -212,6 +212,65 @@ class GatewaySecurityIntegrationTest {
         mvc.perform(get(path).header("Authorization", tenantToken("team-b"))).andExpect(status().isForbidden());
     }
 
+    @Test
+    void knowledgeSearchEnforcesCurrentAclRevisionAndTombstone() throws Exception {
+        String owner = knowledgeToken("team-a", "alice", "knowledge.read knowledge.write");
+        String reader = knowledgeToken("team-a", "bob", "knowledge.read");
+        String outsider = knowledgeToken("team-b", "bob", "knowledge.read knowledge.write");
+        String keyword = "needle" + UUID.randomUUID().toString().replace("-", "");
+        String source = "synthetic-source";
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        String input = mapper.writeValueAsString(java.util.Map.of("source", source,
+                "text", keyword + " example", "readers", java.util.List.of("bob")));
+        String root = "/v1/api/knowledge";
+        var created = mapper.readTree(mvc.perform(post(root + "/documents").header("Authorization", owner)
+                .contentType("application/json").content(input)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("READY")).andReturn().getResponse().getContentAsString());
+        String id = created.get("documentId").asText();
+        String job = created.get("jobId").asText();
+        String search = mapper.writeValueAsString(java.util.Map.of("query", keyword));
+        mvc.perform(post(root + "/search").header("Authorization", reader).contentType("application/json").content(search))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].documentId").value(id))
+                .andExpect(jsonPath("$[0].source").value(source));
+        mvc.perform(post(root + "/search").header("Authorization", outsider).contentType("application/json").content(search))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get(root + "/jobs/" + job).header("Authorization", owner)).andExpect(status().isOk());
+        mvc.perform(get(root + "/jobs/" + job).header("Authorization", outsider)).andExpect(status().isNotFound());
+        String document = root + "/documents/" + id;
+        String replaced = mapper.writeValueAsString(java.util.Map.of("revision", 1, "input", java.util.Map.of(
+                "source", source, "text", keyword + " updated", "readers", java.util.List.of())));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(document)
+                .header("Authorization", owner).contentType("application/json").content(replaced))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.revision").value(2));
+        mvc.perform(post(root + "/search").header("Authorization", reader).contentType("application/json").content(search))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        jdbc.update("DELETE FROM knowledge_chunk WHERE tenant_id = ? AND document_id = ?",
+                "team-a", UUID.fromString(id));
+        mvc.perform(post(document + "/rebuild").header("Authorization", owner)
+                .contentType("application/json").content("{\"revision\":1}")).andExpect(status().isConflict());
+        mvc.perform(post(document + "/rebuild").header("Authorization", owner)
+                .contentType("application/json").content("{\"revision\":2}")).andExpect(status().isOk());
+        mvc.perform(post(root + "/search").header("Authorization", owner).contentType("application/json").content(search))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].revision").value(2));
+        mvc.perform(post(document + "/delete").header("Authorization", outsider)
+                .contentType("application/json").content("{\"revision\":2}")).andExpect(status().isNotFound());
+        mvc.perform(post(document + "/delete").header("Authorization", owner)
+                .contentType("application/json").content("{\"revision\":2}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELETED"));
+        mvc.perform(post(document + "/rebuild").header("Authorization", owner)
+                .contentType("application/json").content("{\"revision\":3}")).andExpect(status().isNotFound());
+        mvc.perform(post(root + "/search").header("Authorization", owner).contentType("application/json").content(search))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM message_outbox WHERE tenant_id = 'team-a'
+                    AND aggregate_id = ? AND event_type = 'knowledge.deleted'
+                """, Integer.class, id)).isEqualTo(1);
+    }
+
+    private static String knowledgeToken(String tenant, String subject, String scopes) throws Exception {
+        return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300), scopes, subject);
+    }
+
     private static String tenantToken(String tenant) throws Exception {
         return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300),
                 "messages.read messages.write");

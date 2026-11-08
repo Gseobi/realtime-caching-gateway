@@ -79,6 +79,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<Void> handleRevisionConflict() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<Void> handleMalformedRequest() {
+        return ResponseEntity.badRequest().build();
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleInternal(Exception ex, HttpServletRequest httpServletRequest) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

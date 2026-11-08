@@ -53,6 +53,12 @@ public class GatewaySecurityConfig {
                         .requestMatchers(HttpMethod.GET, MESSAGES, MESSAGES + "/history", META).hasAuthority("SCOPE_messages.read")
                         .requestMatchers(HttpMethod.POST, MESSAGES).hasAuthority("SCOPE_messages.write")
                         .requestMatchers(HttpMethod.POST, "/v1/api/crm/conversations").hasAuthority("SCOPE_crm.manage")
+                        .requestMatchers(HttpMethod.POST, "/v1/api/knowledge/search").hasAuthority("SCOPE_knowledge.read")
+                        .requestMatchers(HttpMethod.GET, "/v1/api/knowledge/jobs/{id}").hasAuthority("SCOPE_knowledge.write")
+                        .requestMatchers(HttpMethod.POST, "/v1/api/knowledge/documents",
+                                "/v1/api/knowledge/documents/{id}/rebuild", "/v1/api/knowledge/documents/{id}/delete")
+                                .hasAuthority("SCOPE_knowledge.write")
+                        .requestMatchers(HttpMethod.PUT, "/v1/api/knowledge/documents/{id}").hasAuthority("SCOPE_knowledge.write")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder.getObject())))
                 .build();
