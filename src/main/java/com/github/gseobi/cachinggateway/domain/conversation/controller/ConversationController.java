@@ -3,6 +3,7 @@ package com.github.gseobi.cachinggateway.domain.conversation.controller;
 import com.github.gseobi.cachinggateway.domain.conversation.dto.ConversationMetaResponse;
 import com.github.gseobi.cachinggateway.domain.conversation.service.ConversationService;
 import lombok.RequiredArgsConstructor;
+import com.github.gseobi.cachinggateway.domain.crm.CrmConversationOwnership;
 import com.github.gseobi.cachinggateway.common.security.GatewayStorageTenant;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,10 +21,13 @@ public class ConversationController {
     private final ConversationService conversationService;
 
     private final GatewayStorageTenant storageTenant;
+    private final CrmConversationOwnership ownership;
 
     @GetMapping
     public ConversationMetaResponse getConversationMeta(@PathVariable("conversationId") String conversationId,
                                                         @AuthenticationPrincipal Jwt jwt) {
-        return this.conversationService.getConversationMeta(storageTenant.resolve(jwt), conversationId);
+        var tenant = storageTenant.resolve(jwt);
+        ownership.requireAccess(tenant, conversationId, jwt == null ? null : jwt.getSubject());
+        return this.conversationService.getConversationMeta(tenant, conversationId);
     }
 }

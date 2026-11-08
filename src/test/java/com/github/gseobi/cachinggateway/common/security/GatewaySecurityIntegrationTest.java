@@ -180,6 +180,38 @@ class GatewaySecurityIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void crmConversationLimitsAccessToAssignedAgentAndParticipants() throws Exception {
+        String alice = "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", "team-a",
+                Instant.now().plusSeconds(300), "messages.read messages.write crm.manage", "alice");
+        String bob = "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", "team-a",
+                Instant.now().plusSeconds(300), "messages.read", "bob");
+        String mallory = "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", "team-a",
+                Instant.now().plusSeconds(300), "messages.read messages.write crm.manage", "mallory");
+        String body = """
+                {"customerId":"%s","contactId":"%s","participants":["bob"]}
+                """.formatted(UUID.randomUUID(), UUID.randomUUID());
+        String route = "/v1/api/crm/conversations";
+        var response = mvc.perform(post(route).header("Authorization", alice)
+                .contentType("application/json").content(body)).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String conversation = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(response).get("conversationId").asText();
+        mvc.perform(post(route).header("Authorization", mallory)
+                .contentType("application/json").content(body)).andExpect(status().isForbidden());
+        String path = messages(conversation);
+        mvc.perform(post(path).header("Authorization", alice).contentType("application/json").content(payload("alice")))
+                .andExpect(status().isOk());
+        mvc.perform(get(path).header("Authorization", bob)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get(path + "/history").header("Authorization", mallory)).andExpect(status().isForbidden());
+        mvc.perform(get("/v1/api/conversations/" + conversation + "/meta").header("Authorization", mallory))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(path).header("Authorization", mallory).contentType("application/json").content(payload("mallory")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get(path).header("Authorization", tenantToken("team-b"))).andExpect(status().isForbidden());
+    }
+
     private static String tenantToken(String tenant) throws Exception {
         return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300),
                 "messages.read messages.write");
@@ -206,7 +238,12 @@ class GatewaySecurityIntegrationTest {
 
     private static String sign(RSAKey key, String issuer, String audience, String tenant, Instant expiry, String scope)
             throws Exception {
-        var claims = new JWTClaimsSet.Builder().issuer(issuer).audience(audience).subject("alice")
+        return sign(key, issuer, audience, tenant, expiry, scope, "alice");
+    }
+
+    private static String sign(RSAKey key, String issuer, String audience, String tenant, Instant expiry,
+                               String scope, String subject) throws Exception {
+        var claims = new JWTClaimsSet.Builder().issuer(issuer).audience(audience).subject(subject)
                 .claim("tenant_id", tenant).claim("scope", scope);
         if (expiry != null) claims.expirationTime(Date.from(expiry));
         var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claims.build());

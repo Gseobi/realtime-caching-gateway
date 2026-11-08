@@ -40,6 +40,7 @@ docker compose exec -T postgres psql -U postgres -d realtime_caching_gateway < s
 docker compose exec -T postgres psql -1 -v ON_ERROR_STOP=1 -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/tenant_storage_v2.sql
 docker compose exec -T postgres psql -1 -v ON_ERROR_STOP=1 -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/message_retry_v3.sql
 docker compose exec -T postgres psql -1 -v ON_ERROR_STOP=1 -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/message_outbox_v4.sql
+docker compose exec -T postgres psql -1 -v ON_ERROR_STOP=1 -U postgres -d realtime_caching_gateway < src/main/resources/db/migration/crm_ownership_v5.sql
 ./gradlew test
 ./gradlew bootRun
 ```
@@ -67,3 +68,5 @@ Redis client abstraction은 유지하며 서버를 Valkey로 변경했습니다.
 [멱등 재시도와 메시지 이력 API](docs/message-retry-history.md)
 
 [내구성 있는 메시지 Outbox](docs/message-outbox.md)
+
+[CRM 대화 소유권](docs/crm-conversation-ownership.md)

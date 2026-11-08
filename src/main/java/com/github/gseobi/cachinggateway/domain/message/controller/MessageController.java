@@ -7,6 +7,7 @@ import com.github.gseobi.cachinggateway.domain.message.service.MessageService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import com.github.gseobi.cachinggateway.domain.crm.CrmConversationOwnership;
 import com.github.gseobi.cachinggateway.common.security.GatewayStorageTenant;
 
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class MessageController {
     private final MessageService messageService;
 
     private final GatewayStorageTenant storageTenant;
+    private final CrmConversationOwnership ownership;
     private final ObjectMapper objectMapper;
 
     @PostMapping
@@ -38,11 +40,13 @@ public class MessageController {
         if (jwt != null && !jwt.getSubject().equals(messageSaveRequest.getSenderId())) {
             return ResponseEntity.status(403).build();
         }
+        var tenant = storageTenant.resolve(jwt);
+        ownership.requireAccess(tenant, conversationId, jwt == null ? null : jwt.getSubject());
         messageSaveRequest.setConversationId(conversationId);
         if (retryKey != null && !retryKey.matches("[A-Za-z0-9._~-]{1,128}")) {
             return ResponseEntity.badRequest().build();
         }
-        this.messageService.saveMessage(storageTenant.resolve(jwt), messageSaveRequest, retryKey);
+        this.messageService.saveMessage(tenant, messageSaveRequest, retryKey);
         return ResponseEntity.ok().build();
     }
 
@@ -50,7 +54,9 @@ public class MessageController {
     public List<MessageResponse> getMessages(@PathVariable("conversationId") String conversationId,
                                              @Valid @ModelAttribute MessageQueryRequest messageQueryRequest,
                                              @AuthenticationPrincipal Jwt jwt) {
-        return this.messageService.getMessages(storageTenant.resolve(jwt), conversationId, messageQueryRequest);
+        var tenant = storageTenant.resolve(jwt);
+        ownership.requireAccess(tenant, conversationId, jwt == null ? null : jwt.getSubject());
+        return this.messageService.getMessages(tenant, conversationId, messageQueryRequest);
     }
     @GetMapping("/history")
     public ResponseEntity<HistoryPage> history(@PathVariable("conversationId") String conversationId,
@@ -58,6 +64,7 @@ public class MessageController {
                                                @RequestParam(name = "cursor", required = false) String token,
                                                @AuthenticationPrincipal Jwt jwt) throws JsonProcessingException {
         var tenant = storageTenant.resolve(jwt);
+        ownership.requireAccess(tenant, conversationId, jwt == null ? null : jwt.getSubject());
         int limit;
         LocalDateTime sentAt = null;
         String messageId = null;

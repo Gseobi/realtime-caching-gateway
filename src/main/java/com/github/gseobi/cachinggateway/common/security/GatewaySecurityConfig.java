@@ -52,6 +52,7 @@ public class GatewaySecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/v1/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, MESSAGES, MESSAGES + "/history", META).hasAuthority("SCOPE_messages.read")
                         .requestMatchers(HttpMethod.POST, MESSAGES).hasAuthority("SCOPE_messages.write")
+                        .requestMatchers(HttpMethod.POST, "/v1/api/crm/conversations").hasAuthority("SCOPE_crm.manage")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder.getObject())))
                 .build();
