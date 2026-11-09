@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.authorization.AuthorizationManagers;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -35,7 +37,11 @@ public class GatewaySecurityConfig {
     SecurityFilterChain gatewaySecurity(HttpSecurity http,
                                        @Value("${gateway.auth.enabled:false}") boolean enabled,
                                        @Value("${gateway.auth.shared-storage:false}") boolean sharedStorage,
+                                       @Value("${gateway.assistant.enabled:false}") boolean assistantEnabled,
                                        ObjectProvider<JwtDecoder> decoder) throws Exception {
+        if (assistantEnabled && !sharedStorage) {
+            throw new IllegalArgumentException("The assistant requires shared tenant storage");
+        }
         if (sharedStorage && !enabled) {
             throw new IllegalArgumentException("Shared storage requires JWT authentication");
         }
@@ -48,7 +54,8 @@ public class GatewaySecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> {
+                    auth
                         .requestMatchers(HttpMethod.GET, "/v1/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, MESSAGES, MESSAGES + "/history", META).hasAuthority("SCOPE_messages.read")
                         .requestMatchers(HttpMethod.POST, MESSAGES).hasAuthority("SCOPE_messages.write")
@@ -58,8 +65,15 @@ public class GatewaySecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/v1/api/knowledge/documents",
                                 "/v1/api/knowledge/documents/{id}/rebuild", "/v1/api/knowledge/documents/{id}/delete")
                                 .hasAuthority("SCOPE_knowledge.write")
-                        .requestMatchers(HttpMethod.PUT, "/v1/api/knowledge/documents/{id}").hasAuthority("SCOPE_knowledge.write")
-                        .anyRequest().denyAll())
+                        .requestMatchers(HttpMethod.PUT, "/v1/api/knowledge/documents/{id}").hasAuthority("SCOPE_knowledge.write");
+                    if (assistantEnabled) {
+                        auth.requestMatchers(HttpMethod.POST, "/v1/api/crm/conversations/{id}/assistant")
+                                .access(AuthorizationManagers.allOf(
+                                        AuthorityAuthorizationManager.hasAuthority("SCOPE_assistant.answer"),
+                                        AuthorityAuthorizationManager.hasAuthority("SCOPE_knowledge.read")));
+                    }
+                    auth.anyRequest().denyAll();
+                })
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder.getObject())))
                 .build();
     }

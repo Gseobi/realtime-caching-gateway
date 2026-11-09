@@ -13,5 +13,5 @@ public sealed interface AssistantResult {
     record Abstained(Reason reason) implements AssistantResult {
         public Abstained { Objects.requireNonNull(reason, "reason"); }
     }
-    enum Reason { NO_AUTHORIZED_EVIDENCE, DEADLINE_EXCEEDED, MODEL_UNAVAILABLE }
+    enum Reason { NO_AUTHORIZED_EVIDENCE, DEADLINE_EXCEEDED, MODEL_UNAVAILABLE, INSUFFICIENT_EVIDENCE, CAPACITY_EXCEEDED }
 }

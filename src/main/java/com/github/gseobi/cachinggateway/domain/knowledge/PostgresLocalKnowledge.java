@@ -78,11 +78,24 @@ public class PostgresLocalKnowledge implements LocalKnowledge {
 
     @Override
     public List<Hit> search(RequestContext ctx, String query, int limit) {
+        return search(ctx, query, limit, false);
+    }
+
+    @Override
+    public List<Hit> assistantCandidates(RequestContext ctx, String question, int limit) {
+        return search(ctx, question, limit, true);
+    }
+
+    private List<Hit> search(RequestContext ctx, String query, int limit, boolean anyTerm) {
         if (query == null || query.isBlank() || query.length() > 512 || limit < 1 || limit > 100) {
             throw new IllegalArgumentException("Invalid knowledge search bounds");
         }
+        String terms = anyTerm ? """
+                SELECT to_tsquery('simple', COALESCE(string_agg(quote_literal(term), ' | '), '')) AS value
+                FROM unnest(tsvector_to_array(to_tsvector('simple', ?))) AS terms(term)
+                """ : "SELECT plainto_tsquery('simple', ?) AS value";
         return jdbc.query("""
-                WITH query AS (SELECT plainto_tsquery('simple', ?) AS value)
+                WITH query AS (%s)
                 SELECT c.document_id, c.revision, c.ordinal, d.source_label, c.body
                 FROM knowledge_chunk c JOIN knowledge_document d USING (tenant_id, document_id)
                 CROSS JOIN query q
@@ -94,9 +107,25 @@ public class PostgresLocalKnowledge implements LocalKnowledge {
                   ))
                 ORDER BY ts_rank(c.search_vector, q.value) DESC, c.document_id, c.ordinal
                 LIMIT ?
-                """, (rs, row) -> new Hit(rs.getObject("document_id", UUID.class), rs.getLong("revision"),
+                """.formatted(terms), (rs, row) -> new Hit(rs.getObject("document_id", UUID.class), rs.getLong("revision"),
                 rs.getInt("ordinal"), rs.getString("source_label"), rs.getString("body")),
                 query, ctx.tenantId().value(), ctx.principalId(), ctx.principalId(), limit);
+    }
+
+    @Override
+    public boolean stillReadable(RequestContext ctx, Hit hit) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM knowledge_chunk c JOIN knowledge_document d USING (tenant_id, document_id)
+                    WHERE c.tenant_id = ? AND c.document_id = ? AND c.ordinal = ?
+                      AND c.revision = ? AND c.revision = d.revision AND NOT d.deleted
+                      AND (d.owner_id = ? OR EXISTS (
+                        SELECT 1 FROM knowledge_reader r
+                        WHERE r.tenant_id = d.tenant_id AND r.document_id = d.document_id AND r.principal_id = ?
+                      ))
+                )
+                """, Boolean.class, ctx.tenantId().value(), hit.documentId(), hit.chunk(),
+                hit.revision(), ctx.principalId(), ctx.principalId()));
     }
 
     private String lockCurrent(RequestContext ctx, UUID id, long expected) {

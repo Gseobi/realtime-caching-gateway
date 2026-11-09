@@ -54,6 +54,13 @@ public class CrmConversationOwnership {
         return conversation;
     }
 
+    public void requireManagedAccess(StorageTenant tenant, String conversation, String subject) {
+        if (tenant.id().isEmpty() || !MANAGED_ID.matcher(conversation).matches()) {
+            throw new AccessDeniedException("Managed conversation required");
+        }
+        requireAccess(tenant, conversation, subject);
+    }
+
     public void requireAccess(StorageTenant tenant, String conversation, String subject) {
         if (tenant.id().isEmpty() || !MANAGED_ID.matcher(conversation).matches()) return;
         boolean allowed = Boolean.TRUE.equals(jdbc.queryForObject("""

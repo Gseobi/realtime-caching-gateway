@@ -13,6 +13,8 @@ public interface LocalKnowledge {
     Job rebuild(RequestContext context, UUID id, long expectedRevision);
     Job delete(RequestContext context, UUID id, long expectedRevision);
     Optional<Job> job(RequestContext context, UUID jobId);
+    boolean stillReadable(RequestContext context, Hit hit);
+    List<Hit> assistantCandidates(RequestContext context, String question, int limit);
     List<Hit> search(RequestContext context, String query, int limit);
 
     record Document(String source, String text, Set<String> readers) {

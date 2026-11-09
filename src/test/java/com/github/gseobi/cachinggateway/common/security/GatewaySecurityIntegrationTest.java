@@ -271,6 +271,14 @@ class GatewaySecurityIntegrationTest {
         return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300), scopes, subject);
     }
 
+    @Test
+    void disabledAssistantDeniesRequests() throws Exception {
+        String owner = knowledgeToken("team-a", "alice", "knowledge.read assistant.answer");
+        mvc.perform(post("/v1/api/crm/conversations/crm_" + UUID.randomUUID() + "/assistant")
+                .header("Authorization", owner).contentType("application/json")
+                .content("{\"question\":\"synthetic\"}")).andExpect(status().isForbidden());
+    }
+
     private static String tenantToken(String tenant) throws Exception {
         return "Bearer " + sign(SIGNING_KEY, ISSUER, "gateway", tenant, Instant.now().plusSeconds(300),
                 "messages.read messages.write");
