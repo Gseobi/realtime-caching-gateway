@@ -72,4 +72,4 @@ Redis client abstraction은 유지하며 서버를 Valkey로 변경했습니다.
 
 [CRM 대화 소유권](docs/crm-conversation-ownership.md)
 
-[테넌트 지식 관리 및 검색](docs/local-knowledge.md) · [설계 달성률](docs/crm-progress.md)
+[테넌트 지식 관리 및 검색](docs/local-knowledge.md) · [CRM 지식 어시스턴트](docs/gateway-assistant.md) · [설계 달성률](docs/crm-progress.md)
